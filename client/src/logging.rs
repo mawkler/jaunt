@@ -24,7 +24,7 @@ pub fn init(log_file: Option<&std::path::Path>) -> anyhow::Result<()> {
 
     let mut dispatch = fern::Dispatch::new()
         .format(|out, message, record| {
-            let format = chrono::Local::now().format("%H:%M:%S");
+            let format = chrono::Local::now().format("%H:%M:%S%.3f");
             let level = record.level();
             let target = record.target();
             out.finish(format_args!("{format} [{level}][{target}] {message}"));

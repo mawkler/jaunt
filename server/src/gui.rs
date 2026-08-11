@@ -14,6 +14,7 @@ use raisin::ipc::Message;
 use raisin::picker::{self, Picker};
 
 use crate::input;
+use crate::wayland;
 
 fn flat_row_index(picker: &Picker) -> i32 {
     let mut flat = 0;
@@ -165,6 +166,7 @@ struct Gui {
     list_box: gtk4::ListBox,
     header_label: gtk4::Label,
     state: Rc<RefCell<GuiState>>,
+    modifier_observer: Option<wayland::ModifierObserver>,
     compositor: Rc<ActiveCompositor>,
     listener: net::UnixListener,
 }
@@ -236,6 +238,10 @@ impl Gui {
 
         self.state.borrow_mut().picker = Some(picker);
 
+        if let Some(observer) = self.modifier_observer.as_ref() {
+            observer.arm();
+        }
+
         self.window.present();
         if let Some(display) = gdk::Display::default() {
             display.sync();
@@ -250,28 +256,32 @@ impl Gui {
             log::info!("super was released during grab setup, ending session");
             self.end_session();
             self.focus(&window);
-        } else if !Self::super_key_held() {
-            // Super was released before the grab went live, so no release
-            // event will ever reach us; the current modifier state is the
-            // only record of it.
-            log::info!("super was already released when the grab was established, ending session");
-            self.on_super_released();
+        } else if let Some(observer) = self.modifier_observer.as_ref() {
+            // The compositor mandates a `modifiers` event right after the
+            // grab's `enter`; waiting for it is the only reliable way to see
+            // whether Super was still held when the grab went live.
+            let mods = observer.wait_for_grab_modifiers();
+            match mods {
+                Some(0) => {
+                    log::info!(
+                        "super was already released when the grab was established \
+                         (mods_depressed=0x{:x}), ending session",
+                        observer.depressed_mods()
+                    );
+                    self.on_super_released();
+                }
+                Some(_) => {
+                    log::debug!(
+                        "grab established with super held (mods_depressed=0x{:x})",
+                        observer.depressed_mods()
+                    );
+                }
+                None => {
+                    log::info!("no modifiers event observed after the grab, ending session");
+                    self.on_super_released();
+                }
+            }
         }
-    }
-
-    fn super_key_held() -> bool {
-        let Some(display) = gdk::Display::default() else {
-            return false;
-        };
-        let Some(seat) = display.default_seat() else {
-            return false;
-        };
-        let Some(device) = seat.keyboard() else {
-            return false;
-        };
-        device
-            .modifier_state()
-            .contains(gdk::ModifierType::SUPER_MASK)
     }
 
     fn end_session(&self) {
@@ -397,10 +407,22 @@ pub(crate) fn run(compositor: ActiveCompositor, listener: net::UnixListener) -> 
     let footer_label = create_footer_label();
     build_layout(&window, &list_box, &header_label, &footer_label);
 
+    let display = gdk::Display::default().context("failed to get the default display")?;
+    let modifier_observer = match wayland::ModifierObserver::new(&display) {
+        Ok(observer) => Some(observer),
+        Err(err) => {
+            log::warn!(
+                "failed to observe keyboard modifiers, falling back to release-only switching: {err}"
+            );
+            None
+        }
+    };
+
     let gui = Rc::new(Gui {
         window,
         list_box,
         header_label,
+        modifier_observer,
         state: Rc::new(RefCell::new(GuiState {
             picker: None,
             selected_window: None,

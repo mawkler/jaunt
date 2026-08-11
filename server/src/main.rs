@@ -8,6 +8,7 @@ use raisin::ipc;
 
 mod gui;
 mod input;
+mod wayland;
 
 #[derive(clap::Parser, Debug)]
 #[command(
