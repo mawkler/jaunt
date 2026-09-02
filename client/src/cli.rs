@@ -62,6 +62,9 @@ pub enum Command {
         /// window class names.
         app_id: Option<String>,
     },
+    /// Confirm the current switcher selection (internal: called by compositor release bind).
+    #[command(hide = true)]
+    Confirm,
     /// Start the long-running daemon that owns the window switcher GUI.
     Daemon {
         /// Arguments passed through to the daemon binary.

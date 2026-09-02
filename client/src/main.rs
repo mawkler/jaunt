@@ -22,6 +22,7 @@ fn main() -> Result<()> {
         Some(cli::Command::Backward { app, app_id }) => {
             send_message(&ipc::Message::Backward { app, app_id })
         }
+        Some(cli::Command::Confirm) => send_message(&ipc::Message::Confirm),
         None => {
             let app = args
                 .app

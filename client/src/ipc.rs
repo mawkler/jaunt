@@ -17,6 +17,7 @@ fn socket_path() -> PathBuf {
 pub enum Message {
     Forward { app: String, app_id: Option<String> },
     Backward { app: String, app_id: Option<String> },
+    Confirm,
 }
 
 /// Sends a message to the daemon, if one is running.

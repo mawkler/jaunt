@@ -14,7 +14,6 @@ use raisin::ipc::Message;
 use raisin::picker::{self, Picker};
 
 use crate::input;
-use crate::wayland;
 
 fn flat_row_index(picker: &Picker) -> i32 {
     let mut flat = 0;
@@ -166,7 +165,6 @@ struct Gui {
     list_box: gtk4::ListBox,
     header_label: gtk4::Label,
     state: Rc<RefCell<GuiState>>,
-    modifier_observer: Option<wayland::ModifierObserver>,
     compositor: Rc<ActiveCompositor>,
     listener: net::UnixListener,
 }
@@ -196,6 +194,15 @@ impl Gui {
             self.end_session();
             self.start_session(app, &search);
         }
+    }
+
+    fn handle_confirm(&self) {
+        if self.state.borrow().picker.is_none() {
+            log::trace!("Confirm while not open");
+            return;
+        }
+        log::info!("confirming switch via compositor release bind");
+        self.on_super_released();
     }
 
     fn start_session(&self, app: &str, search: &str) {
@@ -238,50 +245,8 @@ impl Gui {
 
         self.state.borrow_mut().picker = Some(picker);
 
-        if let Some(observer) = self.modifier_observer.as_ref() {
-            observer.arm();
-        }
-
         self.window.present();
-        if let Some(display) = gdk::Display::default() {
-            display.sync();
-        }
-        while gtk4::glib::MainContext::default().iteration(false) {
-            // drain pending events to establish the keyboard grab
-        }
-
-        // The user might have released Super while the grab was being
-        // established (the release event fires during the drain above).
-        if let Some(window) = self.state.borrow_mut().selected_window.take() {
-            log::info!("super was released during grab setup, ending session");
-            self.end_session();
-            self.focus(&window);
-        } else if let Some(observer) = self.modifier_observer.as_ref() {
-            // The compositor mandates a `modifiers` event right after the
-            // grab's `enter`; waiting for it is the only reliable way to see
-            // whether Super was still held when the grab went live.
-            let mods = observer.wait_for_grab_modifiers();
-            match mods {
-                Some(0) => {
-                    log::info!(
-                        "super was already released when the grab was established \
-                         (mods_depressed=0x{:x}), ending session",
-                        observer.depressed_mods()
-                    );
-                    self.on_super_released();
-                }
-                Some(_) => {
-                    log::debug!(
-                        "grab established with super held (mods_depressed=0x{:x})",
-                        observer.depressed_mods()
-                    );
-                }
-                None => {
-                    log::info!("no modifiers event observed after the grab, ending session");
-                    self.on_super_released();
-                }
-            }
-        }
+        self.window.grab_focus();
     }
 
     fn end_session(&self) {
@@ -371,6 +336,9 @@ fn setup_socket_handler(gui: &Rc<Gui>) {
             Message::Backward { app, app_id } => {
                 gui_for_cb.handle_switch(&app, app_id.as_deref(), picker::Direction::Backward);
             }
+            Message::Confirm => {
+                gui_for_cb.handle_confirm();
+            }
         }
 
         gtk4::glib::ControlFlow::Continue
@@ -407,22 +375,10 @@ pub(crate) fn run(compositor: ActiveCompositor, listener: net::UnixListener) -> 
     let footer_label = create_footer_label();
     build_layout(&window, &list_box, &header_label, &footer_label);
 
-    let display = gdk::Display::default().context("failed to get the default display")?;
-    let modifier_observer = match wayland::ModifierObserver::new(&display) {
-        Ok(observer) => Some(observer),
-        Err(err) => {
-            log::warn!(
-                "failed to observe keyboard modifiers, falling back to release-only switching: {err}"
-            );
-            None
-        }
-    };
-
     let gui = Rc::new(Gui {
         window,
         list_box,
         header_label,
-        modifier_observer,
         state: Rc::new(RefCell::new(GuiState {
             picker: None,
             selected_window: None,
