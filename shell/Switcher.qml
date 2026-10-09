@@ -170,7 +170,6 @@ Item {
                 says: "cancel"
                 family: switcher.family
                 mono: switcher.mono
-                opacity: Theme.faint
             }
         }
 
@@ -285,7 +284,7 @@ Item {
             y: strip.y + strip.height + Theme.hintGap
             height: implicitHeight
             spacing: 12
-            opacity: key !== "" ? Theme.faint : 0
+            opacity: key !== "" ? 1 : 0
 
             Hint {
                 visible: hints.several

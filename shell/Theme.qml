@@ -68,8 +68,6 @@ Singleton {
     readonly property real sheetShadowBlur: 24
     readonly property real sheetShadowDrop: 6
 
-    // The key hints are worth a glance, and no more.
-    readonly property real faint: 0.4
     // An application with nothing open, which is there for its key.
     readonly property real closed: 0.35
     // An icon standing in for a window that has no picture yet.
