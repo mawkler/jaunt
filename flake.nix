@@ -66,6 +66,7 @@
                 cargo
                 rustc
                 rustfmt
+                rust-analyzer
                 pre-commit
                 rustPackages.clippy
               ])
