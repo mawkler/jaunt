@@ -1,4 +1,4 @@
-//! What the system says about the applications raisin switches between: what
+//! What the system says about the applications Jaunt switches between: what
 //! each one is called, and what its icon is called.
 //!
 //! Read straight off the desktop entries rather than asked of anything, so

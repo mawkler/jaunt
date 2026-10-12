@@ -1,5 +1,5 @@
 [package]
-name = "raisin"
+name = "jaunt"
 description = "Run-or-raise for Hyprland and Niri"
 version = "0.3.0"
 edition = "2024"

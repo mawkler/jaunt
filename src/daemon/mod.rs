@@ -1,4 +1,4 @@
-//! The long-running half of raisin: it listens for the keys it asked Hyprland
+//! The long-running half of jaunt: it listens for the keys it asked Hyprland
 //! to bind, decides what each one means, and tells the switcher what to show.
 
 mod apps;
@@ -33,7 +33,7 @@ use view::{Absent, View};
 pub(crate) use ipc::switch;
 
 /// How long to let a configuration file settle before reading it. Editors
-/// write, rename and truncate in quick succession, and raisin would rather
+/// write, rename and truncate in quick succession, and Jaunt would rather
 /// read the result once than read half of it three times.
 const SETTLE: Duration = Duration::from_millis(60);
 
@@ -51,7 +51,7 @@ pub(crate) fn run(path: Option<&Path>) -> Result<()> {
     // Resolved here so that a stale $HYPRLAND_INSTANCE_SIGNATURE, or more than
     // one Hyprland running, is reported as itself rather than as a failure to
     // install keybinds further down.
-    hyprland::instance_dir().context("raisin's switcher only supports Hyprland")?;
+    hyprland::instance_dir().context("jaunt's switcher only supports Hyprland")?;
 
     // Claimed before anything else, so a second daemon fails fast instead of
     // fighting over the keybinds.
@@ -60,7 +60,7 @@ pub(crate) fn run(path: Option<&Path>) -> Result<()> {
     warn_about_missing(&config);
 
     let binds =
-        Rc::new(Binds::install(&config).context("failed to install raisin's Hyprland keybinds")?);
+        Rc::new(Binds::install(&config).context("failed to install Jaunt's Hyprland keybinds")?);
 
     // Started before the first switch can arrive, so that the view is up and
     // warm by the time one is worth showing.
@@ -127,7 +127,7 @@ impl Daemon {
         let config = match Config::load(self.config_path.as_deref()) {
             Ok(config) => Rc::new(config),
             Err(error) => {
-                eprintln!("raisin: keeping the configuration it had: {error:#}");
+                eprintln!("jaunt: keeping the configuration it had: {error:#}");
                 return;
             }
         };
@@ -148,14 +148,14 @@ impl Daemon {
                 self.config.replace(config);
             }
             Err(error) => {
-                eprintln!("raisin: the new configuration's keybinds were refused: {error:#}");
+                eprintln!("jaunt: the new configuration's keybinds were refused: {error:#}");
 
                 // Put back the ones that were working.
                 match Binds::install(&self.config()) {
                     Ok(binds) => {
                         self.binds.replace(Rc::new(binds));
                     }
-                    Err(error) => eprintln!("raisin: and its own keybinds are gone too: {error:#}"),
+                    Err(error) => eprintln!("jaunt: and its own keybinds are gone too: {error:#}"),
                 }
             }
         }
@@ -196,12 +196,12 @@ impl Daemon {
             }
             Effect::Focus(window) => {
                 if let Err(error) = self.compositor.focus_window(&window) {
-                    eprintln!("raisin: {error:#}");
+                    eprintln!("jaunt: {error:#}");
                 }
             }
             Effect::Close(window) => {
                 if let Err(error) = self.compositor.close_window(&window) {
-                    eprintln!("raisin: {error:#}");
+                    eprintln!("jaunt: {error:#}");
                 }
             }
             Effect::Launch(target) => self.launch(&target),
@@ -216,7 +216,7 @@ impl Daemon {
     /// happen on screen until the application itself got round to appearing.
     fn launch(&self, target: &Target) {
         if let Err(error) = self.compositor.launch_application(&target.app) {
-            eprintln!("raisin: {error:#}");
+            eprintln!("jaunt: {error:#}");
             return;
         }
 
@@ -259,7 +259,7 @@ impl Daemon {
         let windows = match self.compositor.get_windows() {
             Ok(windows) => mapped(&self.config(), windows),
             Err(error) => {
-                eprintln!("raisin: {error:#}");
+                eprintln!("jaunt: {error:#}");
                 return;
             }
         };
@@ -267,7 +267,7 @@ impl Daemon {
         let focused = match self.compositor.get_focused_window() {
             Ok(focused) => focused.map(Box::new),
             Err(error) => {
-                eprintln!("raisin: {error:#}");
+                eprintln!("jaunt: {error:#}");
                 None
             }
         };
@@ -281,7 +281,7 @@ impl Daemon {
     }
 }
 
-/// Follows Hyprland's event stream: the keys raisin asked it to bind arrive
+/// Follows Hyprland's event stream: the keys Jaunt asked it to bind arrive
 /// here, in the order they were pressed, whatever the window happens to be
 /// doing. That ordering is what makes releasing Super reliable — the release
 /// can't overtake the key press that started the switch, and neither waits
@@ -370,7 +370,7 @@ fn on_hyprland_event(daemon: &Rc<Daemon>, line: &str) {
     }
 }
 
-/// Follows the daemon's own socket, where `raisin switch` sends its requests.
+/// Follows the daemon's own socket, where `jaunt switch` sends its requests.
 fn watch_clients(daemon: &Rc<Daemon>, listener: &UnixListener) -> Result<()> {
     let listener = listener
         .try_clone()
@@ -416,7 +416,7 @@ fn watch_config(daemon: &Rc<Daemon>, path: &Path) {
     let mut inotify = match inotify::Inotify::init() {
         Ok(inotify) => inotify,
         Err(error) => {
-            eprintln!("raisin: not watching {}: {error}", path.display());
+            eprintln!("jaunt: not watching {}: {error}", path.display());
             return;
         }
     };
@@ -430,7 +430,7 @@ fn watch_config(daemon: &Rc<Daemon>, path: &Path) {
     let config = match inotify.watches().add(directory, saved) {
         Ok(config) => config,
         Err(error) => {
-            eprintln!("raisin: not watching {}: {error}", directory.display());
+            eprintln!("jaunt: not watching {}: {error}", directory.display());
             return;
         }
     };
@@ -443,7 +443,7 @@ fn watch_config(daemon: &Rc<Daemon>, path: &Path) {
         .and_then(|themes| match inotify.watches().add(&themes, saved) {
             Ok(watch) => Some(watch),
             Err(error) => {
-                eprintln!("raisin: not watching {}: {error}", themes.display());
+                eprintln!("jaunt: not watching {}: {error}", themes.display());
                 None
             }
         });
@@ -528,7 +528,7 @@ fn warn_about_missing(config: &Config) {
     for (key, target) in &config.keys.apps {
         if !installed(&target.app) {
             eprintln!(
-                "raisin: {} isn't installed, so {key} has nothing to switch to",
+                "jaunt: {} isn't installed, so {key} has nothing to switch to",
                 target.app
             );
         }

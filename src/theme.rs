@@ -2,7 +2,7 @@
 //! every other.
 //!
 //! A theme is a file of colours, picked by name: one of the user's own from
-//! `~/.config/raisin/themes`, or one of those raisin comes with. A colour a
+//! `~/.config/jaunt/themes`, or one of those Jaunt comes with. A colour a
 //! theme leaves out is the default theme's.
 
 use std::path::{Path, PathBuf};
@@ -20,7 +20,7 @@ macro_rules! themes {
     };
 }
 
-/// The themes raisin comes with, by name. The first is the default.
+/// The themes Jaunt comes with, by name. The first is the default.
 const BUILT_IN: &[(&str, &str)] = themes![
     // keep-sorted start
     "catppuccin-frappe",
@@ -58,7 +58,7 @@ pub(crate) struct Palette {
 
 impl Default for Palette {
     fn default() -> Self {
-        toml::from_str(BUILT_IN[0].1).expect("raisin's default theme sets every colour")
+        toml::from_str(BUILT_IN[0].1).expect("jaunt's default theme sets every colour")
     }
 }
 
@@ -110,7 +110,7 @@ impl TryFrom<String> for Colour {
 }
 
 /// The colours of the theme called `name`: the user's own by that name, from
-/// `directory`, or else the one raisin comes with. A name with a `/` in it is
+/// `directory`, or else the one Jaunt comes with. A name with a `/` in it is
 /// the path to a theme file instead.
 ///
 /// # Errors
@@ -135,7 +135,7 @@ fn find(name: &str, directory: Option<&Path>) -> Result<(String, String)> {
     if let Some(path) = &path {
         match std::fs::read_to_string(path) {
             Ok(text) => return Ok((text, path.display().to_string())),
-            // Not one of the user's own, but it may be one raisin comes with.
+            // Not one of the user's own, but it may be one Jaunt comes with.
             Err(error) if error.kind() == std::io::ErrorKind::NotFound && !name.contains('/') => {}
             Err(error) => {
                 return Err(error)
@@ -154,12 +154,12 @@ fn find(name: &str, directory: Option<&Path>) -> Result<(String, String)> {
             });
 
             format!(
-                "there's no theme called '{name}': {looked}raisin's own are {}",
+                "there's no theme called '{name}': {looked}Jaunt's own are {}",
                 built_in.join(", ")
             )
         })?;
 
-    Ok(((*text).to_owned(), format!("raisin's {name} theme")))
+    Ok(((*text).to_owned(), format!("jaunt's {name} theme")))
 }
 
 #[cfg(test)]
@@ -168,7 +168,7 @@ mod tests {
 
     /// A directory of themes for one test, emptied first.
     fn themes(test: &str, files: &[(&str, &str)]) -> PathBuf {
-        let directory = std::env::temp_dir().join(format!("raisin-themes-{test}"));
+        let directory = std::env::temp_dir().join(format!("jaunt-themes-{test}"));
         let _ = std::fs::remove_dir_all(&directory);
         std::fs::create_dir_all(&directory).expect("failed to make a themes directory");
 
@@ -184,7 +184,7 @@ mod tests {
     }
 
     #[test]
-    fn the_themes_raisin_comes_with_set_every_colour() {
+    fn the_themes_jaunt_comes_with_set_every_colour() {
         for (name, text) in BUILT_IN {
             toml::from_str::<Palette>(text).unwrap_or_else(|error| panic!("{name}: {error}"));
         }
@@ -223,7 +223,7 @@ mod tests {
     }
 
     #[test]
-    fn a_theme_that_isnt_there_says_where_raisin_looked() {
+    fn a_theme_that_isnt_there_says_where_jaunt_looked() {
         let directory = themes("missing", &[]);
         let error = load("dracula", Some(&directory)).expect_err("there's no dracula");
         let error = format!("{error:#}");

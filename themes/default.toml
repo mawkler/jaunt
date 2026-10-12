@@ -1,6 +1,6 @@
-# raisin's own theme, and what a theme that leaves a colour out falls back to.
+# Jaunt's own theme, and what a theme that leaves a colour out falls back to.
 #
-# To make your own, copy this to ~/.config/raisin/themes/<name>.toml, change
+# To make your own, copy this to ~/.config/jaunt/themes/<name>.toml, change
 # what you like, and set `theme = "<name>"` under [switcher] in config.toml.
 # Every other colour the switcher uses is worked out from these six.
 

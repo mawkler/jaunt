@@ -1,7 +1,7 @@
 //! The configuration file: which key targets which application, which keys
 //! steer the switcher once it's up, and the few knobs it exposes.
 //!
-//! Everything has a default, so raisin runs without a configuration file at
+//! Everything has a default, so Jaunt runs without a configuration file at
 //! all. Writing one replaces the defaults it mentions and leaves the rest.
 
 use std::collections::BTreeMap;
@@ -15,13 +15,13 @@ use serde::Deserialize;
 
 use crate::theme::{self, Palette};
 
-/// raisin's own corner of the user's configuration.
+/// Jaunt's own corner of the user's configuration.
 fn directory() -> Option<PathBuf> {
     let config_home = std::env::var_os("XDG_CONFIG_HOME")
         .map(PathBuf::from)
         .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))?;
 
-    Some(config_home.join("raisin"))
+    Some(config_home.join("jaunt"))
 }
 
 /// Where the configuration lives unless `--config` says otherwise.
@@ -38,7 +38,7 @@ pub(crate) fn themes_directory() -> Option<PathBuf> {
 #[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Config {
-    /// Every key raisin binds.
+    /// Every key Jaunt binds.
     #[serde(default)]
     pub(crate) keys: Keys,
     /// How the switcher behaves and how big it is.
@@ -110,7 +110,7 @@ impl Config {
         Ok(config)
     }
 
-    /// The application the key raisin named `id` targets, if any.
+    /// The application the key Jaunt named `id` targets, if any.
     pub(crate) fn target(&self, id: &str) -> Option<&Target> {
         self.keys
             .apps
@@ -166,7 +166,7 @@ impl From<Entry> for Target {
     }
 }
 
-/// Every key raisin binds: one per application, plus the ones that steer a
+/// Every key Jaunt binds: one per application, plus the ones that steer a
 /// switch already in progress.
 ///
 /// The steering keys are bound only while the switcher is on screen, so they
@@ -250,7 +250,7 @@ impl TryFrom<String> for Key {
 }
 
 impl Key {
-    /// The key as one word, for the event raisin asks Hyprland to emit when
+    /// The key as one word, for the event Jaunt asks Hyprland to emit when
     /// it's pressed: `shift+a`, or just `a`.
     pub(crate) fn id(&self) -> String {
         let mut id: Vec<_> = self.mods.iter().map(|m| m.to_lowercase()).collect();
@@ -298,7 +298,7 @@ pub(crate) struct Switcher {
     #[serde(default = "default_foreground_opacity")]
     pub(crate) foreground_opacity: Opacity,
     /// The colours it's drawn in: the name of a theme, either the user's own
-    /// in `~/.config/raisin/themes` or one raisin comes with, like `default`,
+    /// in `~/.config/jaunt/themes` or one Jaunt comes with, like `default`,
     /// `light` or `catppuccin-mocha`. Or the path to a theme file.
     #[serde(default = "default_theme")]
     pub(crate) theme: String,
@@ -609,7 +609,7 @@ mod tests {
     }
 
     #[test]
-    fn the_switcher_is_drawn_in_raisins_own_theme_unless_the_file_names_another() {
+    fn the_switcher_is_drawn_in_jaunts_own_theme_unless_the_file_names_another() {
         assert_eq!(config("").switcher.theme, "default");
         assert_eq!(config("").palette, Palette::default());
 

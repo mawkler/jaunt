@@ -25,7 +25,7 @@ focused window can wait on it.
 
 | Approach | Who uses it | Why it does or doesn't fit |
 | --- | --- | --- |
-| Compositor-internal scene access | GNOME Shell, KDE's Present Windows, Hyprland's `hyprexpo` plugin | Direct access to each window's texture, so it's free and always correct — but only from inside the compositor. As a Hyprland plugin it would tie raisin to a C++ ABI that changes every release, and rules out every other compositor. |
+| Compositor-internal scene access | GNOME Shell, KDE's Present Windows, Hyprland's `hyprexpo` plugin | Direct access to each window's texture, so it's free and always correct — but only from inside the compositor. As a Hyprland plugin it would tie Jaunt to a C++ ABI that changes every release, and rules out every other compositor. |
 | Portal ScreenCast (xdg-desktop-portal + PipeWire) | OBS window capture, most screen sharing | Built for sharing, not thumbnails: a consent dialog per source, a PipeWire dependency, and a session setup measured in hundreds of milliseconds. Wrong shape for something that has to appear in 90 ms. |
 | `wlr-screencopy-unstable-v1`, cropped to the window | `grim`, `wayshot`, and the crop-the-screenshot trick | Captures an output, not a window. Only works for windows currently on screen, so most of a grouped list would come back blank, stale, or showing whatever is on top of them. |
 | `hyprland-toplevel-export-v1` | `xdg-desktop-portal-hyprland`'s window sharing | Captures one window by address, whether or not it's visible. Exact and available today — and Hyprland-only. |

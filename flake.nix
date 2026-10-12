@@ -35,21 +35,21 @@
           in
           naersk-lib.buildPackage {
             src = ./.;
-            meta.mainProgram = "raisin";
+            meta.mainProgram = "jaunt";
             nativeBuildInputs = with pkgs; [ pkg-config ];
             buildInputs = buildInputs pkgs;
           };
       });
 
       nixosModules = {
-        raisin = import ./nix/nixos-module.nix self;
-        default = self.nixosModules.raisin;
+        jaunt = import ./nix/nixos-module.nix self;
+        default = self.nixosModules.jaunt;
       };
 
       apps = forAllSystems (system: {
         default = {
           type = "app";
-          program = "${self.packages.${system}.default}/bin/raisin";
+          program = "${self.packages.${system}.default}/bin/jaunt";
         };
       });
 

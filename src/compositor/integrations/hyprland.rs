@@ -17,9 +17,9 @@ use anyhow::{Context, Result};
 use crate::compositor::{self, Window};
 use crate::config::{Config, Key, Keys};
 
-/// Everything raisin asks Hyprland to emit is prefixed with this, which is
-/// also how raisin recognises its own keybinds among everyone else's.
-const EVENT_PREFIX: &str = "raisin:";
+/// Everything Jaunt asks Hyprland to emit is prefixed with this, which is
+/// also how Jaunt recognises its own keybinds among everyone else's.
+const EVENT_PREFIX: &str = "jaunt:";
 
 /// What Hyprland counts each modifier as.
 fn modmask(modifier: &str) -> u32 {
@@ -38,28 +38,28 @@ fn modmask(modifier: &str) -> u32 {
 
 /// The event Hyprland emits when a mapped key is pressed, followed by the
 /// letter that was pressed.
-pub(crate) const SWITCH_EVENT: &str = "raisin:switch:";
+pub(crate) const SWITCH_EVENT: &str = "jaunt:switch:";
 
 /// The same, for Shift and a mapped key, which goes the other way.
-pub(crate) const BACK_EVENT: &str = "raisin:back:";
+pub(crate) const BACK_EVENT: &str = "jaunt:back:";
 
 /// The same, for Ctrl and a mapped key, which starts another copy of the
 /// application rather than switching to one that is already running.
-pub(crate) const LAUNCH_EVENT: &str = "raisin:launch:";
+pub(crate) const LAUNCH_EVENT: &str = "jaunt:launch:";
 
 /// The events the keys that steer a switch in progress emit.
-pub(crate) const NEXT_EVENT: &str = "raisin:next";
-pub(crate) const PREVIOUS_EVENT: &str = "raisin:previous";
+pub(crate) const NEXT_EVENT: &str = "jaunt:next";
+pub(crate) const PREVIOUS_EVENT: &str = "jaunt:previous";
 
 /// The event Hyprland emits when Super is released.
-pub(crate) const CONFIRM_EVENT: &str = "raisin:confirm";
+pub(crate) const CONFIRM_EVENT: &str = "jaunt:confirm";
 
 /// The event Hyprland emits when Escape is pressed while the switcher is on
 /// screen.
-pub(crate) const CANCEL_EVENT: &str = "raisin:cancel";
+pub(crate) const CANCEL_EVENT: &str = "jaunt:cancel";
 
 /// Emitted by the key that closes the highlighted window.
-pub(crate) const CLOSE_EVENT: &str = "raisin:close";
+pub(crate) const CLOSE_EVENT: &str = "jaunt:close";
 
 /// The Super keys a switch can be confirmed with.
 const SUPER_KEYS: [&str; 2] = ["Super_L", "Super_R"];
@@ -104,7 +104,7 @@ impl From<Client> for Window {
 /// `$HYPRLAND_INSTANCE_SIGNATURE` says which instance a client belongs to, but
 /// a terminal outlives the session it was opened in, and the directory of a
 /// session that has gone stays behind. The variable is therefore a preference
-/// rather than an answer: raisin follows it while something is listening
+/// rather than an answer: Jaunt follows it while something is listening
 /// there, and otherwise looks for the Hyprland that is.
 pub(crate) fn instance_dir() -> Result<PathBuf> {
     static RESOLVED: OnceLock<PathBuf> = OnceLock::new();
@@ -143,7 +143,7 @@ fn resolve(hypr: &Path, signature: Option<&str>) -> Result<PathBuf> {
         1 => {
             if signature.is_some() {
                 eprintln!(
-                    "raisin: $HYPRLAND_INSTANCE_SIGNATURE names a Hyprland that has gone \
+                    "jaunt: $HYPRLAND_INSTANCE_SIGNATURE names a Hyprland that has gone \
                      (an old terminal, most likely); using the one that is running"
                 );
             }
@@ -152,7 +152,7 @@ fn resolve(hypr: &Path, signature: Option<&str>) -> Result<PathBuf> {
         }
         _ => anyhow::bail!(
             "more than one Hyprland is running, and $HYPRLAND_INSTANCE_SIGNATURE doesn't name \
-             any of them; set it to the one raisin should use: {}",
+             any of them; set it to the one jaunt should use: {}",
             running
                 .iter()
                 .filter_map(|instance| instance.file_name()?.to_str())
@@ -220,19 +220,19 @@ pub(crate) fn config_language() -> ConfigLanguage {
     })
 }
 
-/// Whether raisin owns a key outright, or shares it with whatever else is
+/// Whether Jaunt owns a key outright, or shares it with whatever else is
 /// bound to it.
 ///
 /// The distinction matters because Hyprland removes keybinds by key, not by
-/// bind: unbinding a key raisin shares would take the user's binding with it.
+/// bind: unbinding a key Jaunt shares would take the user's binding with it.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Ownership {
-    /// raisin's alone while it runs. Anything else bound to the key is
+    /// Jaunt's alone while it runs. Anything else bound to the key is
     /// removed, because both firing at once is worse than either: the other
-    /// binding would act on a window while raisin is still asking which one.
+    /// binding would act on a window while Jaunt is still asking which one.
     Exclusive,
-    /// raisin's bind joins whatever is already bound to the key, and only
-    /// raisin's is taken away again.
+    /// Jaunt's bind joins whatever is already bound to the key, and only
+    /// Jaunt's is taken away again.
     ///
     /// This is what keeps a `Super` tap bound to a launcher working. Hyprland
     /// shadows that binding by itself as soon as another bind has fired while
@@ -252,13 +252,13 @@ struct Bind {
     key: String,
     /// The event Hyprland emits for it.
     event: String,
-    /// What it does, for when raisin has to explain itself.
+    /// What it does, for when Jaunt has to explain itself.
     role: String,
     flags: Flags,
     ownership: Ownership,
-    /// Whether something else was bound to this key when raisin started. A
-    /// shared key that was occupied can't have raisin's bind taken off it
-    /// again without taking the other one too, so raisin leaves its own
+    /// Whether something else was bound to this key when Jaunt started. A
+    /// shared key that was occupied can't have Jaunt's bind taken off it
+    /// again without taking the other one too, so Jaunt leaves its own
     /// behind: it consumes nothing and nobody is listening for its event.
     occupied: bool,
 }
@@ -292,7 +292,7 @@ impl Bind {
                 );
 
                 match self.ownership {
-                    // Replace whatever is on the key, raisin's own leftovers
+                    // Replace whatever is on the key, Jaunt's own leftovers
                     // included.
                     Ownership::Exclusive => {
                         vec![format!("keyword unbind {}", self.keys(language)), add]
@@ -300,7 +300,7 @@ impl Bind {
                     Ownership::Shared => vec![add],
                 }
             }
-            // Lua keybinds are objects, so raisin keeps hold of its own and
+            // Lua keybinds are objects, so Jaunt keeps hold of its own and
             // leaves every other binding alone. The table outlives the daemon,
             // which is what lets a restart reuse a bind instead of stacking a
             // second one on the same key.
@@ -314,23 +314,23 @@ impl Bind {
 
                 let body = match self.ownership {
                     // `hl.unbind` destroys every bind on the key, so anything
-                    // raisin is still holding for it has to go first and by
+                    // Jaunt is still holding for it has to go first and by
                     // handle. A handle whose bind was destroyed under it is
                     // not inert: calling it takes the whole compositor down.
                     Ownership::Exclusive => format!(
-                        r#"if e then e.bind:remove() __raisin["{name}"] = nil end for n, v in pairs(__raisin) do if v.keys == "{keys}" then v.bind:remove() __raisin[n] = nil end end hl.unbind("{keys}") __raisin["{name}"] = {{ bind = {bind}, shared = false, keys = "{keys}" }}"#,
+                        r#"if e then e.bind:remove() __jaunt["{name}"] = nil end for n, v in pairs(__jaunt) do if v.keys == "{keys}" then v.bind:remove() __jaunt[n] = nil end end hl.unbind("{keys}") __jaunt["{name}"] = {{ bind = {bind}, shared = false, keys = "{keys}" }}"#,
                         keys = self.keys(language),
                         name = self.lua_name(),
                     ),
                     Ownership::Shared => format!(
-                        r#"if e then e.bind:set_enabled(true) else __raisin["{name}"] = {{ bind = {bind}, shared = true, keys = "{keys}" }} end"#,
+                        r#"if e then e.bind:set_enabled(true) else __jaunt["{name}"] = {{ bind = {bind}, shared = true, keys = "{keys}" }} end"#,
                         keys = self.keys(language),
                         name = self.lua_name(),
                     ),
                 };
 
                 vec![format!(
-                    r#"eval __raisin = __raisin or {{}} do local e = __raisin["{}"] {body} end"#,
+                    r#"eval __jaunt = __jaunt or {{}} do local e = __jaunt["{}"] {body} end"#,
                     self.lua_name()
                 )]
             }
@@ -343,14 +343,14 @@ impl Bind {
             (ConfigLanguage::Legacy, Ownership::Shared) if self.occupied => vec![],
             (ConfigLanguage::Legacy, _) => vec![format!("keyword unbind {}", self.keys(language))],
             (ConfigLanguage::Lua, Ownership::Exclusive) => vec![format!(
-                r#"eval do local e = __raisin["{name}"] if e then e.bind:remove() __raisin["{name}"] = nil end end"#,
+                r#"eval do local e = __jaunt["{name}"] if e then e.bind:remove() __jaunt["{name}"] = nil end end"#,
                 name = self.lua_name()
             )],
             // Disabling is the only way to stop a shared Lua bind firing
             // without removing the key's other bindings. It stops matching
             // keys and stops consuming them; the next run enables it again.
             (ConfigLanguage::Lua, Ownership::Shared) => vec![format!(
-                r#"eval do local e = __raisin["{}"] if e then e.bind:set_enabled(false) end end"#,
+                r#"eval do local e = __jaunt["{}"] if e then e.bind:set_enabled(false) end end"#,
                 self.lua_name()
             )],
         }
@@ -448,7 +448,7 @@ impl Flags {
 /// The binds for one steering key.
 ///
 /// Super is held for the whole of an ordinary switch, so the key is bound with
-/// it; a switch started from `raisin switch` has nobody holding anything, so
+/// it; a switch started from `jaunt switch` has nobody holding anything, so
 /// it's bound without it too. Hyprland matches the modifiers exactly, so only
 /// one of the two ever fires, and `SHIFT + Tab` stays distinct from `Tab`.
 fn session_binds(name: &str, key: &Key, event: &str) -> Vec<Bind> {
@@ -520,9 +520,9 @@ struct ExistingBind {
     arg: String,
 }
 
-/// What else is bound to the keys raisin is about to take.
+/// What else is bound to the keys Jaunt is about to take.
 struct Occupied {
-    /// How many binds that aren't raisin's are on each key.
+    /// How many binds that aren't Jaunt's are on each key.
     others: HashMap<(u32, String), usize>,
 }
 
@@ -538,7 +538,7 @@ impl Occupied {
         };
 
         for bind in existing {
-            // The legacy parser keeps raisin's own events in plain sight.
+            // The legacy parser keeps Jaunt's own events in plain sight.
             if bind.arg.starts_with(EVENT_PREFIX) {
                 continue;
             }
@@ -549,8 +549,8 @@ impl Occupied {
         }
 
         // The Lua parser doesn't: its binds carry a reference rather than a
-        // name, so raisin has to ask which ones are its own.
-        for (slot, count) in raisin_owned(language) {
+        // name, so Jaunt has to ask which ones are its own.
+        for (slot, count) in jaunt_owned(language) {
             if let Some(total) = others.get_mut(&slot) {
                 *total = total.saturating_sub(count);
             }
@@ -564,20 +564,20 @@ impl Occupied {
     }
 }
 
-/// Whether raisin's own bind is already on this key from an earlier run.
+/// Whether Jaunt's own bind is already on this key from an earlier run.
 ///
 /// Only shared keys can be: an exclusive one clears the key before binding it.
 fn already_there(bind: &Bind, installed: &HashSet<(u32, String)>) -> bool {
     bind.ownership == Ownership::Shared && installed.contains(&bind.slot())
 }
 
-/// The keys that already carry a bind of raisin's.
+/// The keys that already carry a bind of Jaunt's.
 ///
-/// A shared key that something else is bound to keeps raisin's bind when the
+/// A shared key that something else is bound to keeps Jaunt's bind when the
 /// daemon stops, because taking it off would take the other one with it. The
 /// next run has to recognise it rather than add a second one.
-fn installed_by_raisin(language: ConfigLanguage) -> HashSet<(u32, String)> {
-    // Lua binds are kept by name in a table of raisin's own, which can't hold
+fn installed_by_jaunt(language: ConfigLanguage) -> HashSet<(u32, String)> {
+    // Lua binds are kept by name in a table of Jaunt's own, which can't hold
     // the same one twice.
     if language != ConfigLanguage::Lua {
         return request("j/binds")
@@ -593,16 +593,16 @@ fn installed_by_raisin(language: ConfigLanguage) -> HashSet<(u32, String)> {
     HashSet::new()
 }
 
-/// The keys raisin already holds in this compositor, as the Lua state knows
-/// them. Binds an earlier run left behind are raisin's own, not a conflict.
-fn raisin_owned(language: ConfigLanguage) -> HashMap<(u32, String), usize> {
+/// The keys Jaunt already holds in this compositor, as the Lua state knows
+/// them. Binds an earlier run left behind are Jaunt's own, not a conflict.
+fn jaunt_owned(language: ConfigLanguage) -> HashMap<(u32, String), usize> {
     let mut owned = HashMap::new();
 
     if language != ConfigLanguage::Lua {
         return owned;
     }
 
-    let listing = r#"repl local out = {} for _, e in pairs(__raisin or {}) do out[#out+1] = e.bind.display_key end return table.concat(out, "\n")"#;
+    let listing = r#"repl local out = {} for _, e in pairs(__jaunt or {}) do out[#out+1] = e.bind.display_key end return table.concat(out, "\n")"#;
     let Ok(response) = request(listing) else {
         return owned;
     };
@@ -616,7 +616,7 @@ fn raisin_owned(language: ConfigLanguage) -> HashMap<(u32, String), usize> {
     owned
 }
 
-/// `SUPER + Super_L`, the way both Hyprland and raisin spell a key, as the
+/// `SUPER + Super_L`, the way both Hyprland and Jaunt spell a key, as the
 /// modifiers and the key it stands for.
 fn parse_keys(keys: &str) -> Option<(u32, String)> {
     let mut parts: Vec<_> = keys
@@ -731,9 +731,9 @@ impl Binds {
 
         // A key configured with Shift of its own lands on the same key as
         // some other key's backwards bind. Both would be installed, and
-        // whichever went second would unbind the first while raisin still
+        // whichever went second would unbind the first while Jaunt still
         // held it. The configured key wins; the derived one is dropped.
-        // A key the user configured beats one raisin derived from another
+        // A key the user configured beats one Jaunt derived from another
         // key, whichever way round they were listed.
         let derived =
             |bind: &Bind| bind.name.starts_with("back:") || bind.name.starts_with("launch:");
@@ -749,7 +749,7 @@ impl Binds {
 
         for bind in &dropped {
             eprintln!(
-                "raisin: {} is {}, so it can't also be {}",
+                "jaunt: {} is {}, so it can't also be {}",
                 bind.spelled(),
                 taken[&bind.slot()],
                 bind.role,
@@ -777,13 +777,13 @@ impl Binds {
         Ok(binds)
     }
 
-    /// Says what raisin is about to do to keys that are already spoken for,
+    /// Says what Jaunt is about to do to keys that are already spoken for,
     /// and to keys it has asked for twice itself. Silence means every key it
     /// binds is its own and means one thing.
     fn warn_about_conflicts(&mut self, config: &Config) {
         if config.keys.apps.is_empty() {
             eprintln!(
-                "raisin: no applications are configured, so no keys are bound; \
+                "jaunt: no applications are configured, so no keys are bound; \
                  add some under [keys.apps]"
             );
         }
@@ -793,7 +793,7 @@ impl Binds {
         for bind in self.binds.iter().chain(&self.session) {
             match roles.entry(bind.slot()) {
                 Entry::Occupied(taken) => eprintln!(
-                    "raisin: {} is {} and {} at once; only one of them will happen",
+                    "jaunt: {} is {} and {} at once; only one of them will happen",
                     bind.spelled(),
                     taken.get(),
                     bind.role
@@ -815,15 +815,15 @@ impl Binds {
             // close the focused window, which is a different one.
             if bind.occupied && bind.name == "close:super" {
                 eprintln!(
-                    "raisin: {} is also bound in your Hyprland configuration, and would fire too \
+                    "jaunt: {} is also bound in your Hyprland configuration, and would fire too \
                      when it closes a window in the switcher; have yours do nothing while the \
-                     raisin layer is on screen",
+                     jaunt layer is on screen",
                     bind.spelled()
                 );
             }
 
-            // A shared key isn't worth mentioning: raisin's bind joins what is
-            // there and nothing of the user's stops working. Only a key raisin
+            // A shared key isn't worth mentioning: Jaunt's bind joins what is
+            // there and nothing of the user's stops working. Only a key Jaunt
             // takes for itself is news.
             if !bind.occupied
                 || bind.ownership == Ownership::Shared
@@ -833,7 +833,7 @@ impl Binds {
             }
 
             eprintln!(
-                "raisin: {} is already bound in your Hyprland configuration; raisin uses it for \
+                "jaunt: {} is already bound in your Hyprland configuration; jaunt uses it for \
                  {} while it runs, and `hyprctl reload` gives it back",
                 bind.spelled(),
                 bind.role
@@ -860,7 +860,7 @@ impl Binds {
             .collect();
 
         let command = format!(
-            r"eval __raisin = __raisin or {{}} do local keep = {{ {} }} for name, e in pairs(__raisin) do if not keep[name] then if e.shared then e.bind:set_enabled(false) else e.bind:remove() end __raisin[name] = nil end end end",
+            r"eval __jaunt = __jaunt or {{}} do local keep = {{ {} }} for name, e in pairs(__jaunt) do if not keep[name] then if e.shared then e.bind:set_enabled(false) else e.bind:remove() end __jaunt[name] = nil end end end",
             keep.join(", ")
         );
 
@@ -868,7 +868,7 @@ impl Binds {
     }
 
     fn add(&self) -> Result<()> {
-        let installed = installed_by_raisin(self.language);
+        let installed = installed_by_jaunt(self.language);
 
         for bind in &self.binds {
             if already_there(bind, &installed) {
@@ -893,7 +893,7 @@ impl Binds {
     /// screen to use them. They belong to the applications underneath the rest
     /// of the time.
     pub(crate) fn capture_session_keys(&self) {
-        let installed = installed_by_raisin(self.language);
+        let installed = installed_by_jaunt(self.language);
 
         for bind in &self.session {
             if already_there(bind, &installed) {
@@ -902,7 +902,7 @@ impl Binds {
 
             for command in bind.add(self.language) {
                 if let Err(error) = request(&command) {
-                    eprintln!("raisin: failed to bind {}: {error:#}", bind.key);
+                    eprintln!("jaunt: failed to bind {}: {error:#}", bind.key);
                 }
             }
         }
@@ -920,7 +920,7 @@ impl Binds {
     /// Puts the keybinds back after Hyprland reloaded its configuration.
     pub(crate) fn reinstall(&self) {
         if let Err(error) = self.add() {
-            eprintln!("raisin: failed to restore keybinds after a config reload: {error:#}");
+            eprintln!("jaunt: failed to restore keybinds after a config reload: {error:#}");
         }
     }
 
@@ -1045,7 +1045,7 @@ mod tests {
             name: "switch:t".to_owned(),
             mods: vec!["SUPER".to_owned()],
             key: "t".to_owned(),
-            event: "raisin:switch:t".to_owned(),
+            event: "jaunt:switch:t".to_owned(),
             role: "the key for ghostty".to_owned(),
             flags: Flags::default(),
             ownership: Ownership::Exclusive,
@@ -1058,7 +1058,7 @@ mod tests {
             name: "confirm:Super_L".to_owned(),
             mods: vec!["SUPER".to_owned()],
             key: "Super_L".to_owned(),
-            event: "raisin:confirm".to_owned(),
+            event: "jaunt:confirm".to_owned(),
             role: "confirming a switch".to_owned(),
             flags: Flags {
                 release: true,
@@ -1077,7 +1077,7 @@ mod tests {
         listening: &[&str],
         gone: &[&str],
     ) -> (PathBuf, Vec<std::os::unix::net::UnixListener>) {
-        let hypr = std::env::temp_dir().join(format!("raisin-{name}-{}", std::process::id()));
+        let hypr = std::env::temp_dir().join(format!("jaunt-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&hypr);
 
         let sockets = listening
@@ -1137,7 +1137,7 @@ mod tests {
             letter_bind().add(ConfigLanguage::Legacy),
             [
                 "keyword unbind SUPER,t",
-                "keyword bind SUPER,t,event,raisin:switch:t"
+                "keyword bind SUPER,t,event,jaunt:switch:t"
             ]
         );
         assert_eq!(
@@ -1152,13 +1152,13 @@ mod tests {
 
         assert_eq!(
             commands,
-            ["keyword bindrtn SUPER,Super_L,event,raisin:confirm"]
+            ["keyword bindrtn SUPER,Super_L,event,jaunt:confirm"]
         );
         assert!(!commands.iter().any(|command| command.contains("unbind")));
     }
 
     #[test]
-    fn a_shared_key_someone_else_uses_keeps_raisins_bind_rather_than_taking_theirs() {
+    fn a_shared_key_someone_else_uses_keeps_jaunts_bind_rather_than_taking_theirs() {
         assert_eq!(
             confirm_bind(true).remove(ConfigLanguage::Legacy),
             [] as [String; 0]

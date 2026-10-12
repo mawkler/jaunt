@@ -8,9 +8,9 @@ use std::path::PathBuf;
     arg_required_else_help = true,
     subcommand_negates_reqs = true,
     after_help = "Examples:\
-        \n  raisin ghostty \
-        \n  raisin ghostty com.mitchellh.ghostty \
-        \n  raisin daemon \
+        \n  jaunt ghostty \
+        \n  jaunt ghostty com.mitchellh.ghostty \
+        \n  jaunt daemon \
         "
 )]
 /// Run-or-raise for Hyprland and Niri
@@ -42,7 +42,7 @@ pub(crate) enum Command {
     /// bindings on them keep working.
     Daemon {
         /// Configuration file to read instead of
-        /// `$XDG_CONFIG_HOME/raisin/config.toml`.
+        /// `$XDG_CONFIG_HOME/jaunt/config.toml`.
         #[arg(long, value_name = "PATH")]
         config: Option<PathBuf>,
     },

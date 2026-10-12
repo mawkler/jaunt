@@ -1,5 +1,5 @@
 //! The socket the daemon listens on. It keeps a second daemon from starting,
-//! and lets `raisin switch` reach a running one.
+//! and lets `jaunt switch` reach a running one.
 
 use std::io::{BufRead, BufReader, Write};
 use std::os::unix::net::{UnixListener, UnixStream};
@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-/// What a `raisin` invocation asks the running daemon to do.
+/// What a `jaunt` invocation asks the running daemon to do.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "command", rename_all = "snake_case")]
 pub(crate) enum Message {
@@ -25,7 +25,7 @@ pub(crate) fn runtime_path(suffix: &str) -> PathBuf {
     let runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/tmp".to_owned());
     let display = std::env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "wayland-0".to_owned());
 
-    PathBuf::from(runtime_dir).join(format!("raisin-{display}{suffix}"))
+    PathBuf::from(runtime_dir).join(format!("jaunt-{display}{suffix}"))
 }
 
 /// The one running daemon. Dropping it takes its socket away.
@@ -41,7 +41,7 @@ impl Instance {
 
         anyhow::ensure!(
             !is_listening(&path),
-            "a raisin daemon is already running ({})",
+            "a Jaunt daemon is already running ({})",
             path.display()
         );
 
@@ -84,7 +84,7 @@ pub(crate) fn receive(stream: UnixStream) -> Option<Message> {
     match serde_json::from_str(&line) {
         Ok(message) => Some(message),
         Err(error) => {
-            eprintln!("raisin: ignoring an unreadable message: {error}");
+            eprintln!("jaunt: ignoring an unreadable message: {error}");
             None
         }
     }
@@ -100,7 +100,7 @@ pub(crate) fn switch(app: &str, app_id: Option<&str>) -> Result<()> {
 
     let mut daemon = UnixStream::connect(&path).map_err(|error| {
         anyhow::anyhow!(
-            "no raisin daemon is running ({error}); start one with `raisin daemon`, \
+            "no jaunt daemon is running ({error}); start one with `jaunt daemon`, \
              for example from your Hyprland startup configuration"
         )
     })?;
@@ -111,5 +111,5 @@ pub(crate) fn switch(app: &str, app_id: Option<&str>) -> Result<()> {
     };
     let message = serde_json::to_string(&message).context("failed to encode the message")?;
 
-    writeln!(daemon, "{message}").context("failed to send the message to the raisin daemon")
+    writeln!(daemon, "{message}").context("failed to send the message to the Jaunt daemon")
 }

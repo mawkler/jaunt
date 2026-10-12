@@ -39,10 +39,10 @@ const SHELL: &[(&str, &str)] = &[
 
 /// A directory to run the shell from instead of the built-in one, for working
 /// on it: Quickshell reloads it every time a file in it is saved.
-const SHELL_OVERRIDE: &str = "RAISIN_SHELL";
+const SHELL_OVERRIDE: &str = "JAUNT_SHELL";
 
 /// How the view finds the socket the daemon talks to it on.
-const SOCKET_VARIABLE: &str = "RAISIN_VIEW_SOCKET";
+const SOCKET_VARIABLE: &str = "JAUNT_VIEW_SOCKET";
 
 /// How long the view has to stay up to count as having started properly,
 /// rather than as one more failure in a row.
@@ -172,7 +172,7 @@ impl Quickshell {
             Ok(child) => child,
             Err(error) => {
                 eprintln!(
-                    "raisin: failed to start {}: {error}",
+                    "jaunt: failed to start {}: {error}",
                     self.program.display()
                 );
                 self.again();
@@ -202,7 +202,7 @@ impl Quickshell {
             self.failures.set(0);
         }
 
-        eprintln!("raisin: the switcher's Quickshell stopped ({status}), so it's starting again");
+        eprintln!("jaunt: the switcher's Quickshell stopped ({status}), so it's starting again");
         self.again();
     }
 
@@ -242,7 +242,7 @@ fn write(lines: &mpsc::Receiver<Outgoing>) {
     }
 }
 
-/// Where the shell runs from: the directory named by `RAISIN_SHELL`, or the
+/// Where the shell runs from: the directory named by `JAUNT_SHELL`, or the
 /// built-in one, written out fresh.
 fn shell() -> Result<PathBuf> {
     if let Some(directory) = std::env::var_os(SHELL_OVERRIDE) {
@@ -251,7 +251,7 @@ fn shell() -> Result<PathBuf> {
 
     let directory = ipc::runtime_path("-shell");
 
-    // Fresh each time, so that nothing from another version of raisin lingers
+    // Fresh each time, so that nothing from another version of Jaunt lingers
     // in it for Quickshell to pick up.
     let _ = std::fs::remove_dir_all(&directory);
     std::fs::create_dir_all(&directory)
