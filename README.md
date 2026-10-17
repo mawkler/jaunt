@@ -17,7 +17,8 @@ Jaunt works similarly to classic `Alt + Tab` switchers, but it is scoped to only
 
 2. Keep holding down the `Super` to see all windows of `<key>`'s program (if it's not running it gets launched)
 3. Keep tapping `<key>` to cycle the focused window
-4. Release `Super` to go to the currently selected window
+4. Or press `Super + <number>` to go straight to a window, using the numbers shown beside them (windows 1-9, and only when the program has more than one)
+5. Release `Super` to go to the currently selected window
 
 ## Installation
 
@@ -91,6 +92,7 @@ icons = true              # icons rather than initials
 background_opacity = 0.92 # the panel
 foreground_opacity = 1    # the sheet holding the windows
 theme = "default"
+numbers = "select"        # or "switch": a number key goes to its window at once
 
 [previews]
 enabled = true
@@ -100,8 +102,9 @@ height = 150   # pixels
 brave-browser = "Brave"
 ```
 
-Hyprland fires every bind on a key, so if you bind `Super` + your `close` key yourself, have it do
-nothing while the switcher is up, or it closes a second window:
+Hyprland fires every bind on a key, and while the switcher is up Jaunt binds `Super + 1`-`9` along
+with your `close` key. If you bind any of those yourself, have yours do nothing while the switcher
+is up, or both happen at once:
 
 ```lua
 hl.bind("SUPER + Q", function()
@@ -110,6 +113,8 @@ hl.bind("SUPER + Q", function()
     end
 end)
 ```
+
+The same pattern goes for `Super + <number>` if you use those for workspaces.
 
 To blur what shows through the panel, add a layer rule:
 
