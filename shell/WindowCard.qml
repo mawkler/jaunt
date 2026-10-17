@@ -135,17 +135,10 @@ Item {
         width: card.frameWidth - 4
         spacing: 5
 
-        Keycap {
-            id: number
-
-            anchors.verticalCenter: parent.verticalCenter
-            text: card.number
-            family: card.mono
-            visible: card.number > 0
-        }
-
         Text {
             anchors.verticalCenter: parent.verticalCenter
+            // The title takes what the key leaves, so the key keeps to the
+            // end of the line however short the title is.
             width: caption.width - (number.visible ? number.width + caption.spacing : 0)
             text: card.label
             color: card.selected ? Theme.selectedText : Theme.text
@@ -162,6 +155,15 @@ Item {
                     easing.bezierCurve: Theme.curve
                 }
             }
+        }
+
+        Keycap {
+            id: number
+
+            anchors.verticalCenter: parent.verticalCenter
+            text: card.number
+            family: card.mono
+            visible: card.number > 0
         }
     }
 }
