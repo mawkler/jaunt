@@ -21,6 +21,11 @@ Item {
     required property bool capturing
     required property bool animate
     required property string family
+    required property string mono
+    // The key that reaches this window, where it has one: its place in the
+    // application's windows, from 1. Zero where there is nothing to choose
+    // between, or past the last key there is.
+    required property int number
 
     readonly property string label: window?.title ?? ""
 
@@ -121,25 +126,41 @@ Item {
         }
     }
 
-    Text {
+    // What the window is called, behind the key that reaches it.
+    Row {
         id: caption
 
         x: Theme.cardPad + 2
         y: Theme.cardPad + card.tall + Theme.titleTop
         width: card.frameWidth - 4
-        text: card.label
-        color: card.selected ? Theme.selectedText : Theme.text
-        font.family: card.family
-        font.pixelSize: 12
-        elide: Text.ElideRight
+        spacing: 5
 
-        Behavior on color {
-            enabled: card.animate
+        Keycap {
+            id: number
 
-            ColorAnimation {
-                duration: Theme.cycle
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.curve
+            anchors.verticalCenter: parent.verticalCenter
+            text: card.number
+            family: card.mono
+            visible: card.number > 0
+        }
+
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            width: caption.width - (number.visible ? number.width + caption.spacing : 0)
+            text: card.label
+            color: card.selected ? Theme.selectedText : Theme.text
+            font.family: card.family
+            font.pixelSize: 12
+            elide: Text.ElideRight
+
+            Behavior on color {
+                enabled: card.animate
+
+                ColorAnimation {
+                    duration: Theme.cycle
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.curve
+                }
             }
         }
     }

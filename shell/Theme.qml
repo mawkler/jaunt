@@ -47,6 +47,9 @@ Singleton {
     readonly property real dotGap: 3
     // At most this many dots, however many windows there are.
     readonly property int dots: 4
+    // At most this many windows carry a number: as many as the daemon binds
+    // digits for.
+    readonly property int numbered: 9
     readonly property real keyTop: 6
 
     // The windows of the application being switched to.

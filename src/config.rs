@@ -302,6 +302,20 @@ pub(crate) struct Switcher {
     /// `light` or `catppuccin-mocha`. Or the path to a theme file.
     #[serde(default = "default_theme")]
     pub(crate) theme: String,
+    /// What the number beside a window does when its key is pressed.
+    #[serde(default = "default_numbers")]
+    pub(crate) numbers: Numbers,
+}
+
+/// What a window's number key does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub(crate) enum Numbers {
+    /// Moves the highlight to that window, which releasing Super then
+    /// switches to, the way every other key in the switcher works.
+    Select,
+    /// Switches to it there and then, without waiting for Super.
+    Switch,
 }
 
 impl Switcher {
@@ -320,6 +334,7 @@ impl Default for Switcher {
             background_opacity: default_background_opacity(),
             foreground_opacity: default_foreground_opacity(),
             theme: default_theme(),
+            numbers: default_numbers(),
         }
     }
 }
@@ -440,6 +455,10 @@ fn default_foreground_opacity() -> Opacity {
 
 fn default_theme() -> String {
     "default".to_owned()
+}
+
+fn default_numbers() -> Numbers {
+    Numbers::Select
 }
 
 fn enabled() -> bool {
@@ -621,6 +640,30 @@ mod tests {
         );
 
         assert_eq!(config.switcher.theme, "light");
+    }
+
+    #[test]
+    fn a_number_key_selects_its_window_unless_the_file_asks_it_to_switch() {
+        assert_eq!(config("").switcher.numbers, Numbers::Select);
+
+        let config = config(
+            r#"
+            [switcher]
+            numbers = "switch"
+            "#,
+        );
+
+        assert_eq!(config.switcher.numbers, Numbers::Switch);
+
+        let error = toml::from_str::<Config>(
+            r#"
+            [switcher]
+            numbers = "jump"
+            "#,
+        )
+        .expect_err("'jump' is not one of them");
+
+        assert!(error.to_string().contains("select"), "{error}");
     }
 
     #[test]

@@ -46,8 +46,10 @@ Item {
     readonly property real sheetRoom: Theme.hintGap + hints.height + Theme.sheetPadBottom
     // Everything in the panel but the windows.
     readonly property real chrome: Theme.padTop + title.implicitHeight + Theme.headingGap + bar.implicitHeight + Theme.barGap + 2 * sheetRoom + Theme.sheetInset
-    // The room a window's title takes under its picture.
-    readonly property real titleSpace: Theme.titleTop + titles.height
+    // The room a window's title takes under its picture, which has to hold
+    // the key beside it as well, and does so whether or not there is one: the
+    // windows are the same size either way.
+    readonly property real titleSpace: Theme.titleTop + Math.max(titles.height, keySize.height)
     // How tall a window's picture is: as tall as configured, unless that
     // would make the panel taller than it may be.
     readonly property int tall: Math.max(48, Math.min(settings.previewHeight, maxHeight - chrome - 2 * Theme.cardPad - titleSpace))
@@ -115,6 +117,15 @@ Item {
 
         font.family: switcher.family
         font.pixelSize: 12
+    }
+
+    // As big as a key, so that the room left for one is exactly a key's.
+    Keycap {
+        id: keySize
+
+        visible: false
+        text: "1"
+        family: switcher.mono
     }
 
     Rectangle {
@@ -265,6 +276,7 @@ Item {
                     capturing: switcher.capturing
                     animate: switcher.animate
                     family: switcher.family
+                    mono: switcher.mono
                 }
             }
         }

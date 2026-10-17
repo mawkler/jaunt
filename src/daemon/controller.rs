@@ -28,6 +28,9 @@ pub(crate) enum Event {
     Confirm,
     /// Escape was pressed.
     Cancel,
+    /// A window's own number key was pressed. `confirm` switches to it there
+    /// and then, rather than only highlighting it.
+    Pick { index: usize, confirm: bool },
     /// The key that closes the highlighted window was pressed.
     ///
     /// `order` is the applications as the switcher shows them, by group,
@@ -94,6 +97,7 @@ impl Controller {
             Event::Cycle { direction } => self.cycle(direction),
             Event::Confirm => self.confirm(),
             Event::Cancel => self.end(),
+            Event::Pick { index, confirm } => self.pick(index, confirm),
             Event::Close { order } => self.close(&order),
             Event::Reveal { session } => self.reveal(session),
         }
@@ -209,6 +213,28 @@ impl Controller {
         effects.push(Effect::Focus(window));
 
         effects
+    }
+
+    /// Highlights the window a number key names, and switches to it when the
+    /// configuration says a number means that.
+    ///
+    /// Only a switch on screen has numbers to press: the keys are bound with
+    /// it, and the numbers are only shown there.
+    fn pick(&mut self, index: usize, confirm: bool) -> Vec<Effect> {
+        let picked = match &mut self.session {
+            Some(session) if self.shown => session.select(index),
+            _ => false,
+        };
+
+        if !picked {
+            return vec![];
+        }
+
+        if confirm {
+            self.confirm()
+        } else {
+            vec![Effect::Highlight]
+        }
     }
 
     /// Closes the highlighted window, and carries on with the rest.
@@ -483,6 +509,62 @@ mod tests {
                 "brave-browser".to_owned(),
             ],
         }
+    }
+
+    fn pick(index: usize, confirm: bool) -> Event {
+        Event::Pick { index, confirm }
+    }
+
+    #[test]
+    fn a_number_key_highlights_the_window_it_belongs_to() {
+        let mut controller = opened();
+
+        assert_eq!(controller.handle(pick(1, false)), [Effect::Highlight]);
+        assert_eq!(
+            controller.handle(Event::Confirm),
+            [
+                Effect::Hide,
+                Effect::Focus(window("3", "com.mitchellh.ghostty"))
+            ]
+        );
+    }
+
+    #[test]
+    fn a_number_key_can_switch_without_waiting_for_super() {
+        let mut controller = opened();
+
+        assert_eq!(
+            controller.handle(pick(1, true)),
+            [
+                Effect::Hide,
+                Effect::Focus(window("3", "com.mitchellh.ghostty"))
+            ]
+        );
+        assert_eq!(controller.handle(Event::Confirm), []);
+    }
+
+    #[test]
+    fn a_number_no_window_answers_to_does_nothing() {
+        let mut controller = opened();
+
+        assert_eq!(controller.handle(pick(2, false)), []);
+        assert_eq!(controller.handle(pick(2, true)), []);
+        // The highlight is where it was.
+        assert_eq!(
+            controller.handle(Event::Confirm),
+            [
+                Effect::Hide,
+                Effect::Focus(window("1", "com.mitchellh.ghostty"))
+            ]
+        );
+    }
+
+    #[test]
+    fn numbers_do_nothing_before_the_switcher_is_on_screen() {
+        let mut controller = started();
+
+        assert_eq!(controller.handle(pick(1, false)), []);
+        assert_eq!(Controller::default().handle(pick(0, true)), []);
     }
 
     #[test]

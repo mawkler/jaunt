@@ -18,6 +18,7 @@ Item {
     required property bool capturing
     required property bool animate
     required property string family
+    required property string mono
 
     // The windows by id, and the order they go in, which only changes when
     // the windows do: a switch moves the highlight over the cards it has
@@ -146,6 +147,10 @@ Item {
             capturing: page.capturing
             animate: page.animate
             family: page.family
+            mono: page.mono
+            // Numbered only where there is a choice to make, and only as far
+            // as the keys go.
+            number: page.windowIds.length > 1 && index < Theme.numbered ? index + 1 : 0
         }
     }
 }

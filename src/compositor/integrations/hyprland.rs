@@ -61,6 +61,13 @@ pub(crate) const CANCEL_EVENT: &str = "jaunt:cancel";
 /// Emitted by the key that closes the highlighted window.
 pub(crate) const CLOSE_EVENT: &str = "jaunt:close";
 
+/// Emitted by a window's own number key, with the number after it.
+pub(crate) const SELECT_EVENT: &str = "jaunt:select:";
+
+/// The windows a number reaches: the ones the digits across the top of the
+/// keyboard can name, which is as many as are worth numbering.
+pub(crate) const NUMBERED: std::ops::RangeInclusive<usize> = 1..=9;
+
 /// The Super keys a switch can be confirmed with.
 const SUPER_KEYS: [&str; 2] = ["Super_L", "Super_R"];
 
@@ -728,6 +735,22 @@ impl Binds {
             .collect();
 
         session.extend(cancel_binds(&config.keys));
+
+        // A window's own number. These are the only keys Jaunt binds without
+        // being told to, which it can afford because they are its own only
+        // while the switcher is on screen.
+        session.extend(NUMBERED.flat_map(|number| {
+            let key = Key {
+                mods: Vec::new(),
+                key: number.to_string(),
+            };
+
+            session_binds(
+                &format!("select:{number}"),
+                &key,
+                &format!("{SELECT_EVENT}{number}"),
+            )
+        }));
 
         // A key configured with Shift of its own lands on the same key as
         // some other key's backwards bind. Both would be installed, and

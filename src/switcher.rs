@@ -170,6 +170,19 @@ impl Session {
         self.label = label.to_owned();
     }
 
+    /// Highlights the window at `index` of the group being switched within,
+    /// for the keys that reach a window by its number. Says whether there was
+    /// one there.
+    pub(crate) fn select(&mut self, index: usize) -> bool {
+        if index >= self.groups[&self.group].len() {
+            return false;
+        }
+
+        self.index = index;
+
+        true
+    }
+
     /// Takes the highlighted window out of the session, for a window that is
     /// being closed. The highlight stays where it was, on the window after
     /// it, or on the last when it was last.
@@ -481,6 +494,18 @@ mod tests {
 
         session.cycle(Direction::Backward);
         assert_eq!(session.selected_window().id, "1");
+    }
+
+    #[test]
+    fn a_window_can_be_highlighted_by_its_place_in_the_group() {
+        let mut session = session(None);
+
+        assert!(session.select(1));
+        assert_eq!(session.selected_window().id, "3");
+
+        // Two ghostty windows, so there is no third.
+        assert!(!session.select(2));
+        assert_eq!(session.selected_window().id, "3");
     }
 
     #[test]

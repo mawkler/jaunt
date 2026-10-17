@@ -23,9 +23,9 @@ use crate::compositor::Compositor as _;
 use crate::compositor::Window;
 use crate::compositor::integrations::hyprland::{
     self, BACK_EVENT, Binds, CANCEL_EVENT, CLOSE_EVENT, CONFIRM_EVENT, LAUNCH_EVENT, NEXT_EVENT,
-    PREVIOUS_EVENT, SWITCH_EVENT,
+    PREVIOUS_EVENT, SELECT_EVENT, SWITCH_EVENT,
 };
-use crate::config::{Config, Target};
+use crate::config::{Config, Numbers, Target};
 use crate::switcher::{Direction, Session};
 use controller::{Controller, Effect, Event};
 use view::{Absent, View};
@@ -324,6 +324,22 @@ fn on_hyprland_event(daemon: &Rc<Daemon>, line: &str) {
         "custom" if data == CONFIRM_EVENT => daemon.handle(Event::Confirm),
         "custom" if data == CANCEL_EVENT => daemon.handle(Event::Cancel),
         "custom" if data == CLOSE_EVENT => daemon.close(),
+        "custom" if data.starts_with(SELECT_EVENT) => {
+            // The windows are numbered from one, as they are on screen.
+            let picked = data
+                .strip_prefix(SELECT_EVENT)
+                .and_then(|number| number.parse::<usize>().ok())
+                .and_then(|number| number.checked_sub(1));
+
+            let Some(index) = picked else {
+                return;
+            };
+
+            daemon.handle(Event::Pick {
+                index,
+                confirm: daemon.config().switcher.numbers == Numbers::Switch,
+            });
+        }
         "custom" if data == NEXT_EVENT => daemon.handle(Event::Cycle {
             direction: Direction::Forward,
         }),
