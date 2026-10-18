@@ -27,7 +27,7 @@ fn directory() -> Option<PathBuf> {
 
 /// The configuration Jaunt ships: every setting, written out at its default,
 /// with what each one does beside it.
-const EXAMPLE: &str = include_str!("../config.example.toml");
+const EXAMPLE: &str = include_str!("default-config.toml");
 
 /// Hands the user that file, to print or to start their own from.
 ///
