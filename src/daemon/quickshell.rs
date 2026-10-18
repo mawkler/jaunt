@@ -171,10 +171,7 @@ impl Quickshell {
         let child = match command.spawn() {
             Ok(child) => child,
             Err(error) => {
-                eprintln!(
-                    "jaunt: failed to start {}: {error}",
-                    self.program.display()
-                );
+                eprintln!("jaunt: failed to start {}: {error}", self.program.display());
                 self.again();
                 return;
             }
