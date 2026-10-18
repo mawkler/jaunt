@@ -92,7 +92,7 @@ icons = true              # icons rather than initials
 background_opacity = 0.92 # the panel
 foreground_opacity = 1    # the sheet holding the windows
 theme = "default"
-numbers = "select"        # or "switch": a number key goes to its window at once
+numbers = { action = "select" } # or "switch": a number key goes to its window at once
 
 [previews]
 enabled = true

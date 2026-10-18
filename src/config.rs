@@ -302,15 +302,33 @@ pub(crate) struct Switcher {
     /// `light` or `catppuccin-mocha`. Or the path to a theme file.
     #[serde(default = "default_theme")]
     pub(crate) theme: String,
-    /// What the number beside a window does when its key is pressed.
-    #[serde(default = "default_numbers")]
+    /// The numbers beside an application's windows.
+    #[serde(default)]
     pub(crate) numbers: Numbers,
+}
+
+/// The numbers beside an application's windows, which reach a window by its
+/// place in the row.
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Numbers {
+    /// What pressing one does.
+    #[serde(default = "default_action")]
+    pub(crate) action: Action,
+}
+
+impl Default for Numbers {
+    fn default() -> Self {
+        Self {
+            action: default_action(),
+        }
+    }
 }
 
 /// What a window's number key does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub(crate) enum Numbers {
+pub(crate) enum Action {
     /// Moves the highlight to that window, which releasing Super then
     /// switches to, the way every other key in the switcher works.
     Select,
@@ -334,7 +352,7 @@ impl Default for Switcher {
             background_opacity: default_background_opacity(),
             foreground_opacity: default_foreground_opacity(),
             theme: default_theme(),
-            numbers: default_numbers(),
+            numbers: Numbers::default(),
         }
     }
 }
@@ -457,8 +475,8 @@ fn default_theme() -> String {
     "default".to_owned()
 }
 
-fn default_numbers() -> Numbers {
-    Numbers::Select
+fn default_action() -> Action {
+    Action::Select
 }
 
 fn enabled() -> bool {
@@ -644,21 +662,21 @@ mod tests {
 
     #[test]
     fn a_number_key_selects_its_window_unless_the_file_asks_it_to_switch() {
-        assert_eq!(config("").switcher.numbers, Numbers::Select);
+        assert_eq!(config("").switcher.numbers.action, Action::Select);
 
         let config = config(
             r#"
-            [switcher]
-            numbers = "switch"
+            [switcher.numbers]
+            action = "switch"
             "#,
         );
 
-        assert_eq!(config.switcher.numbers, Numbers::Switch);
+        assert_eq!(config.switcher.numbers.action, Action::Switch);
 
         let error = toml::from_str::<Config>(
             r#"
-            [switcher]
-            numbers = "jump"
+            [switcher.numbers]
+            action = "jump"
             "#,
         )
         .expect_err("'jump' is not one of them");

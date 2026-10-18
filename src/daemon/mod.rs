@@ -25,7 +25,7 @@ use crate::compositor::integrations::hyprland::{
     self, BACK_EVENT, Binds, CANCEL_EVENT, CLOSE_EVENT, CONFIRM_EVENT, LAUNCH_EVENT, NEXT_EVENT,
     PREVIOUS_EVENT, SELECT_EVENT, SWITCH_EVENT,
 };
-use crate::config::{Config, Numbers, Target};
+use crate::config::{Action, Config, Target};
 use crate::switcher::{Direction, Session};
 use controller::{Controller, Effect, Event};
 use view::{Absent, View};
@@ -337,7 +337,7 @@ fn on_hyprland_event(daemon: &Rc<Daemon>, line: &str) {
 
             daemon.handle(Event::Pick {
                 index,
-                confirm: daemon.config().switcher.numbers == Numbers::Switch,
+                confirm: daemon.config().switcher.numbers.action == Action::Switch,
             });
         }
         "custom" if data == NEXT_EVENT => daemon.handle(Event::Cycle {
