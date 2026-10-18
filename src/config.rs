@@ -6,6 +6,7 @@
 
 use std::collections::BTreeMap;
 use std::fmt;
+use std::io::Write as _;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::time::Duration;
@@ -24,6 +25,56 @@ fn directory() -> Option<PathBuf> {
     Some(config_home.join("jaunt"))
 }
 
+/// The configuration Jaunt ships: every setting, written out at its default,
+/// with what each one does beside it.
+const EXAMPLE: &str = include_str!("../config.example.toml");
+
+/// Hands the user that file, to print or to start their own from.
+///
+/// # Errors
+///
+/// Returns an error if there's nowhere to write one, if one is already there,
+/// or if writing fails.
+pub(crate) fn scaffold(write: bool) -> Result<()> {
+    if !write {
+        print!("{EXAMPLE}");
+
+        return Ok(());
+    }
+
+    let path = default_path().context(
+        "there's nowhere to put a configuration: neither $XDG_CONFIG_HOME nor $HOME is set",
+    )?;
+
+    if let Some(directory) = path.parent() {
+        std::fs::create_dir_all(directory)
+            .with_context(|| format!("failed to create {}", directory.display()))?;
+    }
+
+    // Created rather than written, so that a configuration already there is
+    // never overwritten by a race or by a second run.
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path);
+
+    match file {
+        Ok(mut file) => {
+            file.write_all(EXAMPLE.as_bytes())
+                .with_context(|| format!("failed to write {}", path.display()))?;
+
+            println!("wrote {}", path.display());
+
+            Ok(())
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => Err(anyhow::anyhow!(
+            "{} is already there, and this would write over it",
+            path.display()
+        )),
+        Err(error) => Err(error).with_context(|| format!("failed to create {}", path.display())),
+    }
+}
+
 /// Where the configuration lives unless `--config` says otherwise.
 pub(crate) fn default_path() -> Option<PathBuf> {
     Some(directory()?.join("config.toml"))
@@ -35,7 +86,7 @@ pub(crate) fn themes_directory() -> Option<PathBuf> {
     Some(directory()?.join("themes"))
 }
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Config {
     /// Every key Jaunt binds.
@@ -171,7 +222,7 @@ impl From<Entry> for Target {
 ///
 /// The steering keys are bound only while the switcher is on screen, so they
 /// belong to the applications underneath the rest of the time.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Keys {
     /// Which key targets which application. `Super` and the key starts a
@@ -272,7 +323,7 @@ impl fmt::Display for Key {
 }
 
 /// How the switcher behaves, and how big it is.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Switcher {
     /// How long Super has to stay held, in milliseconds, before the switcher
@@ -309,7 +360,7 @@ pub(crate) struct Switcher {
 
 /// The numbers beside an application's windows, which reach a window by its
 /// place in the row.
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Numbers {
     /// What pressing one does.
@@ -423,7 +474,7 @@ impl TryFrom<Measure> for Size {
 }
 
 /// Thumbnails of the windows of the application being switched to.
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Previews {
     /// Whether to capture them at all.
@@ -658,6 +709,14 @@ mod tests {
         );
 
         assert_eq!(config.switcher.theme, "light");
+    }
+
+    /// The file Jaunt hands out has to say what Jaunt would have done
+    /// anyway, or it teaches the user something untrue the first time a
+    /// default changes.
+    #[test]
+    fn the_configuration_jaunt_ships_sets_everything_to_its_default() {
+        assert_eq!(config(EXAMPLE), Config::default());
     }
 
     #[test]

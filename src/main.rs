@@ -15,6 +15,7 @@ fn main() -> anyhow::Result<()> {
 
     match args.command {
         Some(cli::Command::Daemon { config }) => daemon::run(config.as_deref()),
+        Some(cli::Command::Config { write }) => config::scaffold(write),
         Some(cli::Command::Switch { app, app_id }) => daemon::switch(&app, app_id.as_deref()),
         None => {
             let app = args

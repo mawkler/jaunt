@@ -47,6 +47,14 @@ pub(crate) enum Command {
         config: Option<PathBuf>,
     },
 
+    /// Print a configuration file with every setting at its default.
+    Config {
+        /// Write it to `$XDG_CONFIG_HOME/jaunt/config.toml` rather than
+        /// printing it, as long as there isn't one there already.
+        #[arg(long)]
+        write: bool,
+    },
+
     /// Switch to an application through the running switcher.
     Switch {
         /// Command to run the application (e.g., `ghostty`).

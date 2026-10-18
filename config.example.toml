@@ -1,0 +1,68 @@
+# Jaunt's configuration, with every setting at its default.
+#
+# `jaunt config --write` puts a copy of this at ~/.config/jaunt/config.toml.
+# Saving that file applies it straight away; nothing needs restarting.
+#
+# Jaunt binds nothing until [keys.apps] says so, so that is the one part
+# worth filling in before anything else.
+
+[keys]
+# The keys below are bound only while the switcher is on screen. The rest of
+# the time they belong to whatever you're using. Super is held throughout a
+# switch, so it's implied: `next = "Tab"` means Super and Tab.
+
+# Move the highlight on, and back. Unset: the application's own key already
+# walks its windows, forwards, and with Shift backwards.
+# next = "Tab"
+# previous = "SHIFT + Tab"
+
+# Close the highlighted window. Unset, because Super and most letters are
+# already spoken for in a typical Hyprland configuration.
+# close = "q"
+
+# Close the switcher without switching.
+cancel = "Escape"
+
+# Which key reaches which application, held with Super. The key is a letter,
+# optionally with modifiers of its own ("SHIFT + a"); the value is the command
+# that starts it, or a table when its windows carry a different class.
+[keys.apps]
+# t = "ghostty"
+# s = "spotify"
+# w = { cmd = "brave", app_id = "brave-browser" }
+
+[switcher]
+# How long Super has to stay held, in milliseconds, before the switcher
+# appears. A tap quicker than this switches with nothing on screen.
+delay = 90
+
+# How big it is: a share of the screen, or a number of pixels like 900.
+# Window previews shrink to keep it within max_height.
+width = "50%"
+max_height = "40%"
+
+# Each application's icon, rather than its initials.
+icons = true
+
+# How solid the panel is, and the sheet the windows lie on, from 0 to 1.
+background_opacity = 0.92
+foreground_opacity = 1
+
+# The colours: one Jaunt comes with, one of your own from
+# ~/.config/jaunt/themes, or the path to a theme file.
+theme = "default"
+
+# What the number beside a window does: "select" moves the highlight there,
+# for Super to confirm, and "switch" goes to the window at once.
+numbers = { action = "select" }
+
+[previews]
+# Show what each window looks like, and how tall its picture is in pixels.
+# Every picture is this tall, and as wide as the window's own shape.
+enabled = true
+height = 150
+
+# What to call an application on screen, by the window class its windows
+# carry. Without an entry, the name comes from the desktop entry.
+[names]
+# brave-browser = "Brave"

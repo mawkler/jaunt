@@ -69,7 +69,11 @@ hl.on("hyprland.start", function() hl.exec_cmd("jaunt daemon") end)
 
 ## Configuration
 
-Configuration is in `~/.config/jaunt/config.toml`, and it hot-reloads Jaunt on save. Example configuration:
+Configuration is in `~/.config/jaunt/config.toml`, and it hot-reloads Jaunt on save.
+
+`jaunt config` prints a commented file with every setting at its default ([`config.example.toml`](config.example.toml)), and `jaunt config --write` puts it at `~/.config/jaunt/config.toml`, as long as there isn't one there already.
+
+Example configuration:
 
 ```toml
 [keys]
