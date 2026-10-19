@@ -1,6 +1,11 @@
 # The NixOS module, as `nixosModules.default` of this flake.
 self:
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   cfg = config.services.jaunt;
@@ -29,7 +34,7 @@ in
     settings = lib.mkOption {
       type = toml.type;
       default = { };
-      example = lib.literalExpression ''
+      example = lib.literalExpression /* nix */ ''
         {
           keys = {
             next = "Tab";
@@ -74,16 +79,30 @@ in
       # profiles are what the applications Jaunt starts are installed in.
       path = [
         pkgs.quickshell
+        # gsettings, which the daemon asks for the fonts GTK applications use.
+        pkgs.glib
         "/run/wrappers"
         "%h/.nix-profile"
         "/etc/profiles/per-user/%u"
         "/run/current-system/sw"
       ];
 
+      # Without the schemas the fonts are described in, gsettings knows of no
+      # fonts, and the switcher falls back on Qt's. Applications started from
+      # a GTK one, like the terminal it is run from during development, are
+      # handed them by its wrapper; a service is not.
+      environment.GSETTINGS_SCHEMA_DIR = pkgs.glib.getSchemaPath pkgs.gsettings-desktop-schemas;
+
       serviceConfig = {
         ExecStart = lib.concatStringsSep " " (
-          [ "${cfg.package}/bin/jaunt" "daemon" ]
-          ++ lib.optionals configured [ "--config" "${configFile}" ]
+          [
+            "${cfg.package}/bin/jaunt"
+            "daemon"
+          ]
+          ++ lib.optionals configured [
+            "--config"
+            "${configFile}"
+          ]
         );
         Restart = "on-failure";
         RestartSec = 2;
