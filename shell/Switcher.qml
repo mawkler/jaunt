@@ -54,10 +54,6 @@ Item {
     // would make the panel taller than it may be.
     readonly property int tall: Math.max(48, Math.min(settings.previewHeight, maxHeight - chrome - 2 * Theme.cardPad - titleSpace))
 
-    // The window is exactly as big as the panel.
-    readonly property int surfaceWidth: Math.min(screenWidth, panel.width)
-    readonly property int surfaceHeight: Math.min(screenHeight, panel.height)
-
     // The open applications by the app id they are known by, and the order
     // they go in, which only changes when the applications do: a switch moves
     // things along rather than building them again.
@@ -138,6 +134,12 @@ Item {
         color: Theme.withAlpha(Theme.panel, switcher.backgroundOpacity)
         border.width: 1
         border.color: Theme.panelEdge
+
+        // The panel is not a way out: only a click that misses it is, and
+        // this is what tells the two apart.
+        MouseArea {
+            anchors.fill: parent
+        }
 
         // Where the switch is, as a path: the application, then the window
         // it would land on. The key that cancels it sits at the end of the

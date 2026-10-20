@@ -61,6 +61,15 @@ pub(crate) const CANCEL_EVENT: &str = "jaunt:cancel";
 /// Emitted by the key that closes the highlighted window.
 pub(crate) const CLOSE_EVENT: &str = "jaunt:close";
 
+/// What to dispatch to make Hyprland emit [`CANCEL_EVENT`], for the view to
+/// send when a click puts the switcher away.
+pub(crate) fn cancel_dispatch() -> String {
+    match config_language() {
+        ConfigLanguage::Legacy => format!("event {CANCEL_EVENT}"),
+        ConfigLanguage::Lua => format!(r#"hl.dsp.event("{CANCEL_EVENT}")"#),
+    }
+}
+
 /// Emitted by a window's own number key, with the number after it.
 pub(crate) const SELECT_EVENT: &str = "jaunt:select:";
 

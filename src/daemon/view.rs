@@ -13,6 +13,7 @@ use std::rc::Rc;
 use serde::Serialize;
 
 use super::apps::Apps;
+use crate::compositor::integrations::hyprland;
 use super::quickshell::Quickshell;
 use crate::compositor::Window;
 use crate::config::{self, Config};
@@ -75,6 +76,9 @@ pub(crate) struct Settings {
     cancel_key: String,
     /// The key that closes the highlighted window, when there is one.
     close_key: Option<String>,
+    /// What the view dispatches to put the switcher away itself, when a
+    /// click misses the panel.
+    cancel_dispatch: String,
     /// The font GTK applications use, so that the switcher reads like them
     /// rather than like whatever Qt falls back to.
     font: Option<String>,
@@ -293,6 +297,7 @@ fn settings(config: &Config, fonts: &Fonts) -> Settings {
         palette: config.palette.clone(),
         cancel_key: keycap_name(&config.keys.cancel),
         close_key: config.keys.close.as_ref().map(keycap_name),
+        cancel_dispatch: hyprland::cancel_dispatch(),
         font: fonts.text.clone(),
         mono: fonts.mono.clone(),
     }

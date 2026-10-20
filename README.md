@@ -20,6 +20,8 @@ Jaunt works similarly to classic `Alt + Tab` switchers, but it is scoped to only
 4. Or press `Super + <number>` to go straight to a window, using the numbers shown beside them (windows 1-9, and only when the program has more than one)
 5. Release `Super` to go to the currently selected window
 
+Clicking anywhere outside the switcher closes it, which is the way out if a keybind ever isn't.
+
 ## Installation
 
 ### NixOS

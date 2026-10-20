@@ -71,6 +71,18 @@ ShellRoot {
         }
     }
 
+    // Puts the switcher away from this side. The daemon hears exactly what
+    // the cancel key sends it, and a view whose daemon has gone still takes
+    // itself off screen.
+    function dismiss() {
+        if (settings.cancelDispatch)
+            Hyprland.dispatch(settings.cancelDispatch);
+
+        shown = false;
+        animate = false;
+        capturing = false;
+    }
+
     function receive(line) {
         let message;
 
@@ -139,16 +151,24 @@ ShellRoot {
         exclusionMode: ExclusionMode.Ignore
 
         color: "transparent"
-        // Nor does it take the pointer: everything goes through to whatever
-        // is underneath.
-        mask: Region {}
 
-        // As big as the panel. The panel stays one size while the switcher is
-        // open, so the compositor never has to move it.
-        implicitWidth: switcher.surfaceWidth
-        implicitHeight: switcher.surfaceHeight
+        // The whole screen, so that a click anywhere away from the panel can
+        // put the switcher away. It only covers anything while the switcher
+        // is up, and the panel's own corners stay see-through, which is what
+        // a blur rule's `ignore_alpha` goes by.
+        anchors.top: true
+        anchors.bottom: true
+        anchors.left: true
+        anchors.right: true
 
         visible: root.shown
+
+        // The pointer's way out, for when the keyboard isn't one. Under the
+        // switcher, so that a click landing on the panel is the panel's.
+        MouseArea {
+            anchors.fill: parent
+            onClicked: root.dismiss()
+        }
 
         Switcher {
             id: switcher
