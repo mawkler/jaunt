@@ -20,7 +20,11 @@ macro_rules! themes {
     };
 }
 
-/// The themes Jaunt comes with, by name. The first is the default.
+/// The theme a colour falls back to, and what `theme` means when the
+/// configuration doesn't say.
+const DEFAULT: &str = "default";
+
+/// The themes Jaunt comes with, by name.
 const BUILT_IN: &[(&str, &str)] = themes![
     // keep-sorted start
     "catppuccin-frappe",
@@ -58,7 +62,12 @@ pub(crate) struct Palette {
 
 impl Default for Palette {
     fn default() -> Self {
-        toml::from_str(BUILT_IN[0].1).expect("jaunt's default theme sets every colour")
+        let (_, text) = BUILT_IN
+            .iter()
+            .find(|(name, _)| *name == DEFAULT)
+            .expect("Jaunt ships a theme called 'default'");
+
+        toml::from_str(text).expect("Jaunt's default theme sets every colour")
     }
 }
 
@@ -229,10 +238,11 @@ mod tests {
         let error = format!("{error:#}");
 
         assert!(error.contains("dracula.toml"), "{error}");
-        assert!(
-            error.contains("default, light, catppuccin-latte"),
-            "{error}"
-        );
+
+        // However the list is ordered, it names the ones there are.
+        for name in ["default", "light", "catppuccin-mocha", "nord"] {
+            assert!(error.contains(name), "{name} is missing from: {error}");
+        }
     }
 
     #[test]
