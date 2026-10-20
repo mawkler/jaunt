@@ -61,6 +61,11 @@ pub(crate) const CANCEL_EVENT: &str = "jaunt:cancel";
 /// Emitted by the key that closes the highlighted window.
 pub(crate) const CLOSE_EVENT: &str = "jaunt:close";
 
+/// The submap the switcher runs in. While Hyprland is in it, only binds
+/// made inside it and those marked universal fire, which is how the keys the
+/// switcher takes stop reaching whatever else the user has put on them.
+const SUBMAP: &str = "jaunt";
+
 /// What to dispatch to make Hyprland emit [`CANCEL_EVENT`], for the view to
 /// send when a click puts the switcher away.
 pub(crate) fn cancel_dispatch() -> String {
@@ -293,6 +298,11 @@ struct Flags {
     non_consuming: bool,
     /// Fires whatever else is being held down at the time.
     ignore_mods: bool,
+    /// Goes on firing inside a submap. Jaunt puts the switcher in one so
+    /// that nothing else the user has bound fires while it is up; its own
+    /// keys have to be the exception. Lua only: the legacy parser has no
+    /// such option, and no letter for one.
+    submap_universal: bool,
 }
 
 impl Bind {
@@ -437,6 +447,7 @@ impl Flags {
             (self.transparent, "transparent"),
             (self.non_consuming, "non_consuming"),
             (self.ignore_mods, "ignore_mods"),
+            (self.submap_universal, "submap_universal"),
         ];
 
         options
@@ -727,6 +738,7 @@ impl Binds {
                 // Shift is held whenever the user was walking a group
                 // backwards, and letting go of Super still means confirm.
                 ignore_mods: true,
+                ..Flags::default()
             },
             ownership: Ownership::Shared,
             occupied: false,
@@ -796,9 +808,21 @@ impl Binds {
             session,
         };
 
+        // Every one of Jaunt's own keys has to go on working inside the
+        // submap the switcher runs in; everyone else's is what the submap is
+        // there to keep quiet.
+        for bind in binds.binds.iter_mut().chain(&mut binds.session) {
+            bind.flags.submap_universal = true;
+        }
+
         binds.warn_about_conflicts(config);
         binds.forget_stale_lua_binds();
         binds.add()?;
+        binds.define_submap();
+        // A run that died with the switcher up leaves Hyprland in the
+        // submap, where almost nothing is bound. Starting again takes the
+        // keyboard back.
+        binds.submap("reset");
 
         // The keys that steer a switch swallow what they're bound to, so they
         // belong to the switcher only while it's on screen. A run that ended
@@ -924,6 +948,39 @@ impl Binds {
     /// Binds the keys that steer a switch, for as long as the switcher is on
     /// screen to use them. They belong to the applications underneath the rest
     /// of the time.
+    /// Registers the submap the switcher runs in.
+    ///
+    /// A submap exists only for as long as something is bound in it, so
+    /// Escape lives there and cancels: a way out of the submap whatever else
+    /// has gone wrong.
+    fn define_submap(&self) {
+        if self.language != ConfigLanguage::Lua {
+            return;
+        }
+
+        // shortcut: this adds an Escape rather than replacing the one the
+        // last run left, since removing a bind through a handle Hyprland may
+        // already have dropped takes the whole compositor down with it. The
+        // extras only cancel an already cancelled switch. Worth revisiting if
+        // Hyprland learns to forget a submap.
+        let command = format!(
+            r#"eval hl.define_submap("{SUBMAP}", function() hl.bind("Escape", hl.dsp.event("{CANCEL_EVENT}")) end)"#
+        );
+
+        if let Err(error) = request(&command) {
+            eprintln!("jaunt: the switcher won't have the keyboard to itself: {error:#}");
+        }
+    }
+
+    /// Puts Hyprland in a submap, or takes it back out of one.
+    fn submap(&self, name: &str) {
+        if self.language != ConfigLanguage::Lua {
+            return;
+        }
+
+        let _ = request(&format!(r#"dispatch hl.dsp.submap("{name}")"#));
+    }
+
     pub(crate) fn capture_session_keys(&self) {
         let installed = installed_by_jaunt(self.language);
 
@@ -938,10 +995,14 @@ impl Binds {
                 }
             }
         }
+
+        self.submap(SUBMAP);
     }
 
     /// Gives them back.
     pub(crate) fn release_session_keys(&self) {
+        self.submap("reset");
+
         for bind in &self.session {
             for command in bind.remove(self.language) {
                 let _ = request(&command);
@@ -954,6 +1015,8 @@ impl Binds {
         if let Err(error) = self.add() {
             eprintln!("jaunt: failed to restore keybinds after a config reload: {error:#}");
         }
+
+        self.define_submap();
     }
 
     /// Takes the keybinds away, leaving Hyprland as it was found.
@@ -1254,12 +1317,15 @@ mod tests {
             transparent: true,
             non_consuming: true,
             ignore_mods: false,
+            // The legacy parser has no letter for this one, and no option
+            // either: it only ever reaches the Lua one.
+            submap_universal: true,
         };
 
         assert_eq!(flags.letters(), "rtn");
         assert_eq!(
             flags.options(),
-            ", { release = true, transparent = true, non_consuming = true }"
+            ", { release = true, transparent = true, non_consuming = true, submap_universal = true }"
         );
         assert_eq!(Flags::default().letters(), "");
         assert_eq!(Flags::default().options(), "");

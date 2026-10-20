@@ -108,9 +108,13 @@ height = 150   # pixels
 brave-browser = "Brave"
 ```
 
-Hyprland fires every bind on a key, and while the switcher is up Jaunt binds `Super + 1`-`9` along
-with your `close` key. If you bind any of those yourself, have yours do nothing while the switcher
-is up, or both happen at once:
+While the switcher is up, Jaunt puts Hyprland in a `jaunt` submap, so the keys it takes are its
+own: `Super + 1` picks a window instead of switching workspace, and your `close` key closes the
+highlighted window rather than the focused one. Everything you've bound comes back the moment the
+switcher closes, and `Escape` always gets out.
+
+That needs the Lua configuration. With the legacy parser, Jaunt can't claim the keys, so give any
+of your own binds that clash with it a guard instead:
 
 ```lua
 hl.bind("SUPER + Q", function()
@@ -119,8 +123,6 @@ hl.bind("SUPER + Q", function()
     end
 end)
 ```
-
-The same pattern goes for `Super + <number>` if you use those for workspaces.
 
 To blur what shows through the panel, add a layer rule:
 
