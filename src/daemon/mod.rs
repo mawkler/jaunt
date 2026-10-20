@@ -45,7 +45,7 @@ const SETTLE: Duration = Duration::from_millis(60);
 /// or if the keybinds couldn't be set up.
 pub(crate) fn run(path: Option<&Path>) -> Result<()> {
     let config_path = Config::path(path);
-    let config = Rc::new(Config::load(path)?);
+    let config = Rc::new(Config::read(path));
     let compositor = hyprland::Compositor;
 
     // Resolved here so that a stale $HYPRLAND_INSTANCE_SIGNATURE, or more than

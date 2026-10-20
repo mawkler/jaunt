@@ -117,10 +117,39 @@ fn lowercased_keys<'de, D>(deserializer: D) -> Result<BTreeMap<String, String>, 
 where
     D: serde::Deserializer<'de>,
 {
-    Ok(BTreeMap::<String, String>::deserialize(deserializer)?
+    Ok(lowercased(BTreeMap::deserialize(deserializer)?))
+}
+
+fn lowercased(names: BTreeMap<String, String>) -> BTreeMap<String, String> {
+    names
         .into_iter()
         .map(|(app_id, name)| (app_id.to_lowercase(), name))
-        .collect())
+        .collect()
+}
+
+/// Reads one section of the file over the default already in `into`, saying
+/// what was wrong and leaving the default in place when it can't. Answers
+/// whether it took.
+fn section<T>(table: &toml::Table, name: &str, into: &mut T) -> bool
+where
+    T: serde::de::DeserializeOwned,
+{
+    let Some(value) = table.get(name) else {
+        return false;
+    };
+
+    match T::deserialize(value.clone()) {
+        Ok(section) => {
+            *into = section;
+
+            true
+        }
+        Err(error) => {
+            eprintln!("jaunt: [{name}] keeps its defaults: {error}");
+
+            false
+        }
+    }
 }
 
 impl Config {
@@ -159,6 +188,68 @@ impl Config {
         config.palette = theme::load(&config.switcher.theme, themes_directory().as_deref())?;
 
         Ok(config)
+    }
+
+    /// The configuration the daemon starts with: whatever the file gets
+    /// right, and the default for whatever it doesn't, each complaint on its
+    /// own line.
+    ///
+    /// A daemon that refuses to start over a misspelt setting is a desktop
+    /// with no switcher at all, and under a service manager it is that on a
+    /// loop. Reloading is stricter, because there it has a working
+    /// configuration to keep instead.
+    pub(crate) fn read(path: Option<&Path>) -> Self {
+        match Self::load(path) {
+            Ok(config) => config,
+            Err(error) => {
+                eprintln!("jaunt: {error:#}");
+
+                Self::recover(path)
+            }
+        }
+    }
+
+    /// Reads the file again, section by section, so that one bad setting
+    /// only costs the section it is in.
+    fn recover(path: Option<&Path>) -> Self {
+        let mut config = Self::default();
+
+        let Some(path) = Self::path(path) else {
+            return config;
+        };
+        let Ok(file) = std::fs::read_to_string(&path) else {
+            return config;
+        };
+
+        let table: toml::Table = match file.parse() {
+            Ok(table) => table,
+            // Not even TOML, so there are no sections to pick through.
+            Err(_) => {
+                eprintln!("jaunt: every setting is at its default until that is fixed");
+
+                return config;
+            }
+        };
+
+        section(&table, "keys", &mut config.keys);
+        section(&table, "switcher", &mut config.switcher);
+        section(&table, "previews", &mut config.previews);
+
+        let mut names = BTreeMap::new();
+
+        if section(&table, "names", &mut names) {
+            config.names = lowercased(names);
+        }
+
+        config.palette = theme::load(&config.switcher.theme, themes_directory().as_deref())
+            .unwrap_or_else(|error| {
+                eprintln!("jaunt: {error:#}");
+                eprintln!("jaunt: the switcher keeps its own colours");
+
+                Palette::default()
+            });
+
+        config
     }
 
     /// The application the key Jaunt named `id` targets, if any.
@@ -635,6 +726,62 @@ mod tests {
             })
         );
         assert_eq!(config.keys.previous.unwrap().to_string(), "SHIFT + Tab");
+    }
+
+    /// Writes a configuration somewhere of its own and reads it the way the
+    /// daemon starts up with it.
+    fn started_with(file: &str) -> Config {
+        let directory = std::env::temp_dir().join("jaunt-recover");
+        let _ = std::fs::create_dir_all(&directory);
+
+        let path = directory.join(format!("{:x}.toml", file.len() * 31 + file.len()));
+        std::fs::write(&path, file).expect("failed to write a configuration");
+
+        Config::read(Some(&path))
+    }
+
+    #[test]
+    fn a_setting_that_makes_no_sense_costs_its_section_and_nothing_else() {
+        let config = started_with(
+            r#"
+            [keys.apps]
+            t = "ghostty"
+
+            [switcher]
+            delay = 150
+            background_opacity = "very"
+
+            [previews]
+            height = 42
+            "#,
+        );
+
+        // The section with the bad setting is back to its defaults...
+        assert_eq!(config.switcher.delay, default_delay());
+        assert_eq!(config.switcher.background_opacity, Opacity(0.92));
+        // ...and every other section still says what the file said.
+        assert_eq!(config.target("t"), Some(&Target::new("ghostty", None)));
+        assert_eq!(config.previews.height, 42);
+    }
+
+    #[test]
+    fn a_file_that_isnt_toml_at_all_leaves_everything_at_its_default() {
+        let config = started_with("[keys.apps\nt = ghostty");
+
+        assert_eq!(config, Config::default());
+    }
+
+    #[test]
+    fn a_file_with_nothing_wrong_reads_the_same_either_way() {
+        let file = r#"
+            [keys.apps]
+            t = "ghostty"
+
+            [switcher]
+            delay = 150
+            "#;
+
+        assert_eq!(started_with(file), config(file));
     }
 
     #[test]
