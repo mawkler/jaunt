@@ -36,6 +36,7 @@
           naersk-lib.buildPackage {
             src = ./.;
             meta.mainProgram = "jaunt";
+            meta.license = pkgs.lib.licenses.gpl3Plus;
             nativeBuildInputs = with pkgs; [ pkg-config ];
             buildInputs = buildInputs pkgs;
           };
