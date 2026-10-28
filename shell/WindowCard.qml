@@ -144,7 +144,7 @@ Item {
             color: card.selected ? Theme.selectedText : Theme.text
             font.family: card.family
             font.pixelSize: 12
-            elide: Text.ElideRight
+            elide: Text.ElideMiddle
 
             Behavior on color {
                 enabled: card.animate

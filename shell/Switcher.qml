@@ -174,7 +174,7 @@ Item {
                 color: Theme.muted
                 font.family: switcher.family
                 font.pixelSize: 13
-                elide: Text.ElideRight
+                elide: Text.ElideMiddle
             }
 
             Hint {
