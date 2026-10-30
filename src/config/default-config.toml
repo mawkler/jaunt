@@ -1,6 +1,6 @@
 # Jaunt's configuration, with every setting at its default.
 #
-# `jaunt config --write` puts a copy of this at ~/.config/jaunt/config.toml.
+# `jaunt default-config --write` puts a copy of this at ~/.config/jaunt/config.toml.
 # Saving that file applies it straight away; nothing needs restarting.
 #
 # Jaunt binds nothing until [keys.apps] says so, so that is the one part

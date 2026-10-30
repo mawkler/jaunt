@@ -48,7 +48,7 @@ pub(crate) enum Command {
     },
 
     /// Print a configuration file with every setting at its default.
-    Config {
+    DefaultConfig {
         /// Write it to `$XDG_CONFIG_HOME/jaunt/config.toml` rather than
         /// printing it, as long as there isn't one there already.
         #[arg(long)]
